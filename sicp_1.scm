@@ -62,7 +62,8 @@
 	      ((= kinds 2) 5)
 	      ((= kinds 3) 10)
 	      ((= kinds 4) 25)
-	      ((= kinds 5) 50)))
+	      ((= kinds 5) 50)
+	      ))
 
 (define (cc amount kinds path)
 	(print "path: " path  " amount:" amount " kinds:" kinds) 
