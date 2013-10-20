@@ -12,7 +12,7 @@
 
 (define (oscilate len amplitude half_wlen)
   (if (= len 0) (quote ())
-		(if (= 0 (modulo len half_wlen))
+		(if (= 0 (modulo (- 1 len) half_wlen))
 			(cons amplitude (oscilate (sub1 len) (bitwise-xor amplitude 255) half_wlen))
 			(cons amplitude (oscilate (sub1 len) amplitude half_wlen)))))
 
@@ -35,5 +35,5 @@
 				  (write-byte (car bytes))
 				(output (cdr bytes)))))
 
-(loop 100)
+;(loop 100)
 ;(output (sound 1000 .01))
