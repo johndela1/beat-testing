@@ -18,24 +18,26 @@
                                     (bitwise-xor amplitude 255)))
           (cons amplitude (oscilate (sub1 len) half_wlen amplitude)))))
 
+(define (play sound-func)
+  (with-output-to-file "/dev/dsp" (lambda () (sound-func))))
 
+(define (get-boom)
+  (output (sound 500 .05)))
 
-(define (loop freq)
-(map write-byte (sound freq 1))
-(thread-sleep! 1)
-(map write-byte (sound freq 1))
-(thread-sleep! 1)
-(map write-byte (sound freq 1))
-(thread-sleep! 1)
-(map write-byte (sound freq 1))
-(thread-sleep! 2)
-(loop freq))
+(define (get-chick)
+  (output (sound 10000 .05)))
 
 (define (output bytes)
-	(if (null? bytes) 0
-			  (when
-				  (write-byte (car bytes))
-				(output (cdr bytes)))))
+  (if (null? bytes)
+      0
+      (when 't
+       (write-byte (car bytes))
+       (output (cdr bytes)))))
 
+(define (loop freq)
+  (play get-boom)
+  (thread-sleep! .5)
+  (play get-chick)
+  (thread-sleep! .5)
+  (loop 100))
 (loop 100)
-;(output (sound 1000 .01))
