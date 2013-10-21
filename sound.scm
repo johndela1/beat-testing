@@ -31,7 +31,7 @@
 (define (output bytes)
   (if (null? bytes)
       0
-      (when 't
+      (when 't_
        (write-byte (car bytes))
        (output (cdr bytes)))))
 
@@ -39,7 +39,6 @@
   (if (null? (file-select '(0) '() 0))
       ""
       (read-byte)))
- 
 
 (define (check-clock counter)
   (= 0 (modulo counter 10)))
@@ -54,14 +53,16 @@
         (iter (cdr l) (add1 m))))
   (iter l 0))
    
-(define song '(B _ B _ B _))
+(define song '(B _ B B B _))
 (define (loop counter)
   ;(print 'tick)
   (if (check-clock counter)
-      (print (nth song (get-note-index counter)))
+      (when 't
+       (print (nth song (get-note-index counter)))
+       (play get-boom))
       "")
   (print (poll-keys))
-  (thread-sleep! .05)
+  (thread-sleep! .07)
   (loop (add1 counter)))
 
 (loop 0)
