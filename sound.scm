@@ -1,6 +1,7 @@
 #!/usr/bin/csi -s
 
 (use srfi-18)
+(use posix)
 
 (define *SAMPLE-RATE* 8000)
 
@@ -34,10 +35,13 @@
        (write-byte (car bytes))
        (output (cdr bytes)))))
 
-(define (loop freq)
+(define (loop)
+  (if (null? (file-select '(0) '() 1))
+      'f
+      (read))
   (play get-boom)
-  (thread-sleep! .5)
+  (thread-sleep! .1)
   (play get-chick)
-  (thread-sleep! .5)
-  (loop 100))
-(loop 100)
+  (thread-sleep! .1)
+  (loop))
+(loop)
