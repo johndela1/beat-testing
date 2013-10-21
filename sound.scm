@@ -52,15 +52,15 @@
         (car l)
         (iter (cdr l) (add1 m))))
   (iter l 0))
-   
+
 (define song '(B _ B B B _))
 (define (loop counter)
   ;(print 'tick)
   (if (check-clock counter)
-      (when 't
-       (print (nth song (get-note-index counter)))
-       (play get-boom))
-      "")
+      (if (eq? 'B (nth song (get-note-index counter)))
+          (when 
+           (play get-boom)
+           (print 'boom))))
   (print (poll-keys))
   (thread-sleep! .07)
   (loop (add1 counter)))
