@@ -3,7 +3,9 @@
 (use srfi-18)
 (use posix)
 
-(define *SAMPLE-RATE* 8000)
+(define *hz* 10)
+(define *jiffies-per-note* 10)
+
 (define (cube x) (* x x x))
 (define (p x) (- (* 3 x) (* 4 (cube x))))
 (define (sine angle)
@@ -12,9 +14,10 @@
        (p (sine (/ angle 3.0)))))
 
 (define (sound freq duration)
-  (oscilate (* *SAMPLE-RATE* duration)
-            (/ *SAMPLE-RATE* (* 2 freq))
-            0))
+  (let ((*ihz* 8000))
+  (oscilate (* *ihz* duration)
+            (/ *ihz* (* 2 freq))
+            0)))
 
 
 (define (oscilate len half_wlen amplitude)
@@ -26,7 +29,7 @@
           (cons amplitude (oscilate (sub1 len) half_wlen amplitude)))))
 
 (define (play sound-func)
-  (with-output-to-file "/dev/dsp" (lambda () (sound-func))))
+  (with-output-to-file "/dev/null" (lambda () (sound-func))))
 
 (define (get-boom)
   (output (sound 500 .05)))
@@ -43,29 +46,34 @@
 
 (define (poll-keys)
   (if (null? (file-select '(0) '() 0))
-      ""
+      #f
       (read-byte)))
 
-(define (check-clock counter)
-  (= 0 (modulo counter 10)))
+(define (beat? counter)
+  (= 0 (modulo counter *jiffies-per-note*)))
 
 (define (get-note-index counter)
-  (modulo (/ counter 10) 6))
+  (modulo (/ counter *jiffies-per-note*) song_len))
 
 (define song '(B _ B B B _))
+(define song_len 6)
+
+(define (beat counter)
+ (if (eq? 'B (list-ref song (get-note-index counter)))
+     (begin
+      (play get-boom)
+      (print 'boom))))
 
 (define (loop counter record)
-  ;(print counter)
-  (if (check-clock counter)
-      (if (eq? 'B (list-ref song (get-note-index counter)))
-          (begin
-           (play get-boom)
-           (print 'boom))))
-  (print (poll-keys))
-  (thread-sleep! .1)
+  (if (beat? counter)
+      (beat counter))
+  (thread-sleep! (/ 1 *hz*))
 
   (if (> counter 0)
-      (loop (sub1 counter) record)
+      (loop (sub1 counter)
+            (cons (poll-keys) record))
       record))
 
-(loop 100 '())
+(print (loop 100 '()))
+
+
