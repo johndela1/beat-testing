@@ -4,6 +4,12 @@
 (use posix)
 
 (define *SAMPLE-RATE* 8000)
+(define (cube x) (* x x x))
+(define (p x) (- (* 3 x) (* 4 (cube x))))
+(define (sine angle)
+   (if (not (> (abs angle) 0.1))
+       angle
+       (p (sine (/ angle 3.0)))))
 
 (define (sound freq duration)
   (oscilate (* *SAMPLE-RATE* duration)
@@ -31,7 +37,7 @@
 (define (output bytes)
   (if (null? bytes)
       0
-      (when 't_
+      (begin
        (write-byte (car bytes))
        (output (cdr bytes)))))
 
@@ -46,23 +52,20 @@
 (define (get-note-index counter)
   (modulo (/ counter 10) 6))
 
-(define (nth l n)
-  (define (iter l m)
-    (if (= n m)
-        (car l)
-        (iter (cdr l) (add1 m))))
-  (iter l 0))
-
 (define song '(B _ B B B _))
-(define (loop counter)
-  ;(print 'tick)
+
+(define (loop counter record)
+  ;(print counter)
   (if (check-clock counter)
-      (if (eq? 'B (nth song (get-note-index counter)))
-          (when 
+      (if (eq? 'B (list-ref song (get-note-index counter)))
+          (begin
            (play get-boom)
            (print 'boom))))
   (print (poll-keys))
-  (thread-sleep! .07)
-  (loop (add1 counter)))
+  (thread-sleep! .1)
 
-(loop 0)
+  (if (> counter 0)
+      (loop (sub1 counter) record)
+      record))
+
+(loop 100 '())

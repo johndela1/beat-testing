@@ -74,14 +74,30 @@
 	      	       (cc (- amount (first-denom kinds)) kinds
 			 (cons 'b path))))))
 
-	
-(define (f n)
-	(if (< n 3)
-		n
-		(+ (f (- n 1))
-		   (* 2 (f (- n 2)))
-		   (* 3 (f (- n 3))))))
+(define (it-exp b n a)
+  (if (= n 0)
+      a
+      (it-exp b (sub1 n) (* b a))))
 
-(define (if n)
-	(define iter))
-;(print (cc 5 1 '(entry)))
+(define (iexp b n)
+  (define (iter b n prod)
+    (if (= n 0)
+        prod
+        (iter b (sub1 n) (* prod b))))
+  (iter b n 1))
+
+(define (jexp b n)
+  (if (= 0 n) 1 (* b (jexp b (sub1 n)))))
+
+(define (fast-expt b n)
+  (cond ((= n 0)
+         1)
+        ((even? n)
+         (square (fast-expt b (/ n 2))))
+        (else
+         (* b (fast-expt b (- n 1))))))
+
+(define (jmul a b)
+  (if (= b 0)
+      0
+      (+ a (jmul a (sub1 b)))))
