@@ -3,8 +3,13 @@
 (use srfi-18)
 (use posix)
 
-(define *hz* 8000)
-(define *jiffies-per-note* 500)
+(define song '(B _ B B B _))
+;(define song '(B _ _ _ _ _ B _ _ _ _ _ B _ _ _ _ _ B _ _ _ _ _ B _ _ _ _ _ B _ _ _ _ _ B _ _ _ _ _ B _ _ B _ _ _ _ _ _ _ _ _ _ _ _ _ _ B _ B _ B _ B _ _ _ _ _ B _ _ _ _ _ B _ _ _ _ _ B _ _ _ _ _ _ _ _ _ _ _))
+;(define song '(B _ _ _ _ _ B _ _ B _ _ _ _ _ _ _ _ _ _ _ _ _ _ B _ B _ B _ B _ _ _ _ _ ))
+
+(define *song-len* (length song))
+(define *hz* 100)
+(define *jiffies-per-note* 20)
 
 (define (cube x) (* x x x))
 (define (p x) (- (* 3 x) (* 4 (cube x))))
@@ -14,10 +19,9 @@
        (p (sine (/ angle 3.0)))))
 
 (define (sound freq duration)
-  (let ((*ihz* 8000))
-  (oscilate (* *ihz* duration)
-            (/ *ihz* (* 2 freq))
-            0)))
+  (oscilate (* 8000 duration)
+            (/ 8000 (* 2 freq))
+            0))
 
 
 (define (oscilate len half_wlen amplitude)
@@ -47,28 +51,25 @@
 (define (poll-keys)
   (if (null? (file-select '(0) '() 0))
       #f
-      (read-byte)))
+      (begin (write  '-) (read-byte))))
 
 (define (beat? counter)
   (= 0 (modulo counter *jiffies-per-note*)))
 
 (define (get-note-index counter)
-  (modulo (/ counter *jiffies-per-note*) song_len))
-
-(define song '(B _ B B B _))
-
-;(define song '(B _ _ _ _ _ ));B _ _ _ _ _ B _ _ _ _ _ B _ _ _ _ _ B _ _ _ _ _ B _ _ _ _ _ B _ _ _ _ _ B _ _ B _ _ _ _ _ _ _ _ _ _ _ _ _ _ B _ B _ B _ B _ _ _ _ _ B _ _ _ _ _ B _ _ _ _ _ B _ _ _ _ _ _ _ _ _ _ _))
-(define song_len (length song))
+  (modulo (/ counter *jiffies-per-note*) *song-len*))
 
 (define (check-for-beat counter)
  (if (beat? counter)
    (if (eq? 'B (list-ref song (get-note-index counter)))
        (begin
-         (play get-boom)
-         (print 'boom))
-       (print "tick"))))
+         ;(play get-boom)
+         (write 'boom))
+       )))
 
 (define (loop counter record)
+  (when (= (modulo counter 10) 0)
+        (print ""))
   (check-for-beat counter)
   (thread-sleep! (/ 1 *hz*))
 
@@ -77,6 +78,6 @@
             (cons (poll-keys) record))
       record))
 
-(print (loop (* *hz* song_len) '()))
+(print (loop (* *hz* *song-len*) '()))
 
 
