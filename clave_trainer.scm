@@ -6,18 +6,20 @@
 (open-audio)
 
 
-(define *hz* 20)
+(define *hz* 25)
 (define *jiffies-per-note* 10)
 
-;(define *song* '(B _ B B B _));two  over three
+(define *song* '(B _ B B B _));two  over three
 ;(define *song* '(B _ B _ _ B _ B _ B _ _)) ;rhumba clave
-(define *song* '(B _ B _ B _ _ B _ B _ _))  ;son clave
+;(define *song* '(B _ B _ B _ _ B _ B _ _))  ;son clave
+;(define *song* '(B _ _ _ _ _ B _ _ B _ _ _ _ _ _ _ _ _ _ _ _ _ _ B _ B _ B _ B _ _ _ _ _ B _ _ _ _ _ B _ _ _ _ _ B _ _ _ _ _ _ _ _ _ _ _))
+;(define song '(B _ _ _ _ _ B _ _ B _ _ _ _ _ _ _ _ _ _ _ _ _ _ B _ B _ B _ B _ _ _ _ _ )
 (define *song-len* (length *song*))
 (define *boom* (load-sample "boom.vorbis"))
 
 
 
-(define (poll-keys)
+(define (poll-keys!)
   (if (null? (file-select '(0) '() 0))
       #f
       (begin (write  '-) (read-byte))))
@@ -43,7 +45,7 @@
 
 (define (loop jiffies)
   (check-sub-division jiffies)
-  (poll-keys)
+  (poll-keys!)
   (print "")
   (thread-sleep! (/ 1 *hz*))
   (loop (add1 jiffies)))
