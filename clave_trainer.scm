@@ -51,3 +51,4 @@
   (loop (add1 jiffies)))
 
 (loop 0)
+(close-audio)
