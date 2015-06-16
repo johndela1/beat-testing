@@ -1,7 +1,8 @@
-#!/usr/local/bin/csi -s
+#!/usr/bin/csi -s
 
 (use posix)
 (use srfi-1)
+(use srfi-18)
 
 (define (make-ts l)
 	(define (make-ts-iter l t)
@@ -21,10 +22,10 @@
 			(map round
 				(map (lambda (x) (* x factor)) l)))))
 	
-(define (pass? ref input)
+(define (pass? song input)
 		(not (any (lambda (x) (print x) (> x 60))
 			(map (lambda (pair) (abs (- (car pair) (cadr pair))))
-			     (zip ref input)))))
+			     (zip song input)))))
 
 (define (read-pattern n samples)
 	(cond
@@ -42,13 +43,22 @@
 ;(print (map (lambda (x) (* (+ 100 x) 10)) (make-ts '(1 0 0 0 1 0 0 0 1))))
 ;(print (map (lambda (x) (+ (* 10 x) 100)) (make-ts '(1 0 0 0 1 0 0 0 1))))
 
-(define (go)
-	(let (
-		(input (scale
-			(start-at-zero (read-pattern 8 '())) 1000))
-		(ref (scale
-			(make-ts '(x 0 x 0 x 0 x 0 0 x 0 x 0 x 0 x)) 1000)))
+(define song (scale (make-ts '(x 0 x 0 x 0 x 0 0 x 0 x 0 x 0 x)) 1000))
+(define song (scale (make-ts '(x 0 x 0 x 0 x 0 x 0 x 0 x 0 x 0)) 1000))
 
-		(print (pass? ref input)))
+(define (loop)
+	(let ((input (scale (start-at-zero (read-pattern 8 '())) 1000)))
+		(print (pass? song input)))
 	(loop))
-(loop)
+;(loop)
+
+(define (play song)
+	(if (null? song)
+		't
+		(begin
+			(thread-sleep! (/ (car song) 500))
+			(print 'XXXXXXXXX)
+			(play (cdr song)))))
+		
+;(print song)
+(play song)
