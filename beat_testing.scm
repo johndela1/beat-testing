@@ -43,14 +43,12 @@
 ;(print (map (lambda (x) (* (+ 100 x) 10)) (make-ts '(1 0 0 0 1 0 0 0 1))))
 ;(print (map (lambda (x) (+ (* 10 x) 100)) (make-ts '(1 0 0 0 1 0 0 0 1))))
 
-(define song (scale (make-ts '(x 0 x 0 x 0 x 0 0 x 0 x 0 x 0 x)) 1000))
-(define song (scale (make-ts '(x 0 x 0 x 0 x 0 x 0 x 0 x 0 x 0)) 1000))
-
-(define (loop)
-	(let ((input (scale (start-at-zero (read-pattern 8 '())) 1000)))
-		(print (pass? song input)))
-	(loop))
-;(loop)
+(define (count-strikes song)
+	(define (loop song acc)
+		(if (null? song)
+			0
+			(loop (cdr song) (add1 acc))))
+	(loop song 0))
 
 (define (play song)
 	(if (null? song)
@@ -60,5 +58,26 @@
 			(print 'XXXXXXXXX)
 			(play (cdr song)))))
 		
+(define (ts->period song)
+	(define (loop song prev_ts)
+		(if (null? song)
+			'()
+			(let ((ts (car song)))
+				(cons (- ts prev_ts) (loop (cdr song) ts)))))
+	(loop song 0))
+
+(define song (scale (make-ts '(x 0 0 0 x 0 0 0 0 0 0 0 x 0 0 0)) 1000))
+;(define song (scale (make-ts '(x 0 x 0 x 0 x 0 0 x 0 x 0 x 0 x)) 1000))
+
+(print (length song))
+(sleep 1)
+(play (ts->period song))
+(define (loop)
+	(let ((input (scale (start-at-zero (read-pattern (length song) '())) 1000)))
+		(print (pass? song input)))
+;	(loop))
+)
+(loop)
 ;(print song)
-(play song)
+;(print (ts->period (scale song 2000)))
+;(play (ts->period (scale song 4000)))
