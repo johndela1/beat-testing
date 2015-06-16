@@ -3,6 +3,10 @@
 (use posix)
 (use srfi-1)
 (use srfi-18)
+(use sdl-mixer)
+(open-audio)
+(define *boom* (load-sample "boom.vorbis"))
+
 
 (define (make-ts l)
 	(define (make-ts-iter l t)
@@ -55,6 +59,7 @@
 		't
 		(begin
 			(thread-sleep! (/ (car song) 500))
+			(play-sample *boom*)
 			(print 'XXXXXXXXX)
 			(play (cdr song)))))
 		
@@ -68,6 +73,8 @@
 
 (define song (scale (make-ts '(x 0 0 0 x 0 0 0 0 0 0 0 x 0 0 0)) 1000))
 ;(define song (scale (make-ts '(x 0 x 0 x 0 x 0 0 x 0 x 0 x 0 x)) 1000))
+(define song (scale (make-ts '(X 0 X X X 0)) 1000));two  over three
+
 
 (print (length song))
 (sleep 1)
