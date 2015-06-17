@@ -76,11 +76,15 @@
 		'()
 		(cons (- (car song) (car input))
 			(diff (cdr song) (cdr input)))))
-(define s_fact 1000)
+(define s_fact 4000)
 (define scaled-ts (compose (lambda (l) (scale l s_fact)) make-ts))
 (define scaled-start-at-zero (compose (lambda (l) (scale l s_fact))
 					start-at-zero))
 
+(define (loop-song song n)
+	(if (= n 0)
+		'()
+		(append song (loop-song song (sub1 n)))))
 (define song (scaled-ts '(x 0 0 0 x 0 0 0 0 0 0 0 x 0 0 0)))
 (define song (scaled-ts '(X 0 X X X 0)));two  over three
 (define song (scaled-ts '(X 0 X 0 X X 0 X X 0 x 0)));two over three
@@ -89,8 +93,10 @@
 (define song (scaled-ts '(B 0 B 0 0 B 0 B 0 B 0 0)));rhumba
 (define song (scaled-ts '(B b B 0 0 B b B)));war
 (define song (scaled-ts '(B b B b b B b B)));war
-
-;(play (ts->period song))
+(define song (scaled-ts '(B 0 B 0 b B 0 B 0 b 0 b)));bell pattern
+(define song (scaled-ts
+	(loop-song '(b b 0 b b 0 b 0 b b 0 b b 0 0 b) 2)));honky tonk cowbell
+(play (ts->period song))
 (define (loop)
 	(let ((input (scaled-start-at-zero (read-pattern (length song)))))
 		(print (pass? song input))
