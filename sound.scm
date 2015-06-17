@@ -2,6 +2,11 @@
 
 (use srfi-18)
 (use posix)
+(use sdl-mixer)
+
+(open-audio)
+(define noise (load-sample "boom.vorbis"))
+
 
 (define song '(B _ B B B _))
 ;(define song '(B _ _ _ _ _ B _ _ _ _ _ B _ _ _ _ _ B _ _ _ _ _ B _ _ _ _ _ B _ _ _ _ _ B _ _ _ _ _ B _ _ B _ _ _ _ _ _ _ _ _ _ _ _ _ _ B _ B _ B _ B _ _ _ _ _ B _ _ _ _ _ B _ _ _ _ _ B _ _ _ _ _ _ _ _ _ _ _))
@@ -32,8 +37,8 @@
                                     (bitwise-xor amplitude 255)))
           (cons amplitude (oscilate (sub1 len) half_wlen amplitude)))))
 
-(define (play sound-func)
-  (with-output-to-file "/dev/dsp" (lambda () (sound-func))))
+;(define (play sound-func)
+;  (with-output-to-file "/dev/dsp" (lambda () (sound-func))))
 
 (define (get-boom)
   (output (sound 500 .05)))
@@ -64,6 +69,7 @@
    (if (eq? 'B (list-ref song (get-note-index counter)))
        (begin
          ;(play get-boom)
+	 (play-sample noise)
          (write 'boom))
        )))
 
@@ -73,11 +79,11 @@
   (check-for-beat counter)
   (thread-sleep! (/ 1 *hz*))
 
-  (if (> counter 0)
+  (if (<= counter 0)
+      record
       (loop (sub1 counter)
-            (cons (poll-keys) record))
-      record))
+            (cons (poll-keys) record))))
 
-(print (loop (* *hz* *song-len*) '()))
+(loop (* *hz* *song-len*) '())
 
 
