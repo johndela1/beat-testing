@@ -4,8 +4,9 @@
 (use srfi-1)
 (use srfi-18)
 (use sdl-mixer)
+
 (open-audio)
-(define *boom* (load-sample "boom.vorbis"))
+(define noise (load-sample "boom.vorbis"))
 
 
 (define (make-ts l)
@@ -27,25 +28,24 @@
 				(map (lambda (x) (* x factor)) l)))))
 	
 (define (pass? song input)
-		(not (any (lambda (x) (print x) (> x 60))
-			(map (lambda (pair) (abs (- (car pair) (cadr pair))))
+		(not (any (lambda (x) (> (abs x) 60))
+			(map (lambda (pair) (- (car pair) (cadr pair)))
 			     (zip song input)))))
 
-(define (read-pattern n samples)
-	(cond
-		((= n 0) (map inexact->exact (reverse samples)))
+(define (read-pattern n)
+	(define (loop n acc)
+		(cond
+		((= n 0) (map inexact->exact (reverse acc)))
 		(else
-			(file-select '(0) '() 3)
+			(file-select '(0) '() 100)
 			(let ((ts (current-milliseconds)))
 				(read-byte)
-				(read-pattern (sub1 n) (cons ts samples))))))
+				(loop (sub1 n) (cons ts acc))))))
+	(loop n '()))
+
 (define (align ref input)
 	(cond
 		(else (print "This wont be trivial"))))
-
-;(print (scale (start-at-zero (make-ts '(1 0 0 0 1 0 0 0 1))) 1000))
-;(print (map (lambda (x) (* (+ 100 x) 10)) (make-ts '(1 0 0 0 1 0 0 0 1))))
-;(print (map (lambda (x) (+ (* 10 x) 100)) (make-ts '(1 0 0 0 1 0 0 0 1))))
 
 (define (count-strikes song)
 	(define (loop song acc)
@@ -59,7 +59,7 @@
 		't
 		(begin
 			(thread-sleep! (/ (car song) 500))
-			(play-sample *boom*)
+			(play-sample noise)
 			(print 'XXXXXXXXX)
 			(play (cdr song)))))
 		
@@ -71,20 +71,29 @@
 				(cons (- ts prev_ts) (loop (cdr song) ts)))))
 	(loop song 0))
 
-(define song (scale (make-ts '(x 0 0 0 x 0 0 0 0 0 0 0 x 0 0 0)) 1000))
-;(define song (scale (make-ts '(x 0 x 0 x 0 x 0 0 x 0 x 0 x 0 x)) 1000))
-(define song (scale (make-ts '(X 0 X X X 0)) 1000));two  over three
+(define (diff song input)
+	(if (or (null? song) (null? input))
+		'()
+		(cons (- (car song) (car input))
+			(diff (cdr song) (cdr input)))))
+(define s_fact 1000)
+(define scaled-ts (compose (lambda (l) (scale l s_fact)) make-ts))
+(define scaled-start-at-zero (compose (lambda (l) (scale l s_fact))
+					start-at-zero))
 
+(define song (scaled-ts '(x 0 0 0 x 0 0 0 0 0 0 0 x 0 0 0)))
+(define song (scaled-ts '(X 0 X X X 0)));two  over three
+(define song (scaled-ts '(X 0 X 0 X X 0 X X 0 x 0)));two over three
+(define song (scaled-ts '(x 0 x 0 x 0 x 0 0 x 0 x 0 x 0 x )))
+(define song (scaled-ts '(B 0 B 0 B 0 0 B 0 B 0 0)));son
+(define song (scaled-ts '(B 0 B 0 0 B 0 B 0 B 0 0)));rhumba
+(define song (scaled-ts '(B b B 0 0 B b B)));war
+(define song (scaled-ts '(B b B b b B b B)));war
 
-(print (length song))
-(sleep 1)
-(play (ts->period song))
+;(play (ts->period song))
 (define (loop)
-	(let ((input (scale (start-at-zero (read-pattern (length song) '())) 1000)))
-		(print (pass? song input)))
-;	(loop))
-)
+	(let ((input (scaled-start-at-zero (read-pattern (length song)))))
+		(print (pass? song input))
+		(print (diff song input))
+		(print (apply + (map abs (diff song input))))) (loop))
 (loop)
-;(print song)
-;(print (ts->period (scale song 2000)))
-;(play (ts->period (scale song 4000)))
