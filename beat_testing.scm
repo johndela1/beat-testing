@@ -60,18 +60,23 @@
 
 			(else
 			(let ((diff (- (closest (car input) song 1000 0 -1) idx)))
-			(print 'closest: (closest (car input) song 1000 0 -1))
-			(print 'idx: idx)
-			(print "diff: " diff)
 			(cond
 				((= diff 0)
 					(cons (car input)
 					      (loop (cdr input) (add1 idx))))
 				((> diff 0) (cons -99 (cons (car input)
 					      (loop (cdr input) (+ 2 idx)))))
-				((< diff 0)(loop (cdr input) (add1 idx))))))))
-					
+				((< diff 0)
+					(if (null? (cdr input))
+						(loop (cdr input) idx)
+						(loop (cddr input) idx))))))))
+
 	(loop input 0))
+(let ((good '(10 20 30 40 50 60)) (bad '(11 21 22 31 40 51 61 63)))
+	(print (align good bad)))
+(let ((good '(10 20 30 40 50 60)) (bad '(11 21 31 40  51 61)))
+	(print (align good bad)))
+;(quit)
 
 (define (count-strikes song)
 	(define (loop song acc)
@@ -102,7 +107,7 @@
 		'()
 		(cons (- (car song) (car input))
 			(diff (cdr song) (cdr input)))))
-(define s_fact 4000)
+(define s_fact 1000)
 (define scaled-ts (compose (lambda (l) (scale l s_fact)) make-ts))
 (define scaled-start-at-zero (compose (lambda (l) (scale l s_fact))
 					start-at-zero))
@@ -123,10 +128,8 @@
 (define song (scaled-ts '(B 0 B 0 b B 0 B 0 b 0 b)));bell pattern
 (define song (scaled-ts
 	(loop-song '(b b 0 b b 0 b 0 b b 0 b b 0 0 b) 2)));honky tonk cowbell
+(define song (scaled-ts '(B 0 0 b b 0 0 B)));war
 
-(let ((good '(10 20 30 40)) (bad '(11 30 40 )))
-	(print (align good bad)))
-(quit)
 (play (ts->period song))
 (define (main-loop)
 	(let ((input (align song (scaled-start-at-zero
