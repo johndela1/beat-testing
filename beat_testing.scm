@@ -43,9 +43,35 @@
 				(loop (sub1 n) (cons ts acc))))))
 	(loop n '()))
 
-(define (align ref input)
-	(cond
-		(else (print "This wont be trivial"))))
+(define (align song input)
+	(define (closest ts l smallest s_idx ret_idx)
+		(cond
+		((null? l) ret_idx)
+		(else
+			(if (< (abs (- (car l) ts)) smallest)
+			(closest ts (cdr l) (abs (- (car l) ts))
+				 (add1 s_idx) s_idx)
+				
+			(closest ts (cdr l) smallest
+				 (add1 s_idx) ret_idx)))))
+	(define (loop input idx)
+		(cond
+			((null? input) '())
+
+			(else
+			(let ((diff (- (closest (car input) song 1000 0 -1) idx)))
+			(print 'closest: (closest (car input) song 1000 0 -1))
+			(print 'idx: idx)
+			(print "diff: " diff)
+			(cond
+				((= diff 0)
+					(cons (car input)
+					      (loop (cdr input) (add1 idx))))
+				((> diff 0) (cons -99 (cons (car input)
+					      (loop (cdr input) (+ 2 idx)))))
+				((< diff 0)(loop (cdr input) (add1 idx))))))))
+					
+	(loop input 0))
 
 (define (count-strikes song)
 	(define (loop song acc)
@@ -85,6 +111,7 @@
 	(if (= n 0)
 		'()
 		(append song (loop-song song (sub1 n)))))
+
 (define song (scaled-ts '(x 0 0 0 x 0 0 0 0 0 0 0 x 0 0 0)))
 (define song (scaled-ts '(X 0 X X X 0)));two  over three
 (define song (scaled-ts '(X 0 X 0 X X 0 X X 0 x 0)));two over three
@@ -96,10 +123,15 @@
 (define song (scaled-ts '(B 0 B 0 b B 0 B 0 b 0 b)));bell pattern
 (define song (scaled-ts
 	(loop-song '(b b 0 b b 0 b 0 b b 0 b b 0 0 b) 2)));honky tonk cowbell
+
+(let ((good '(10 20 30 40)) (bad '(11 30 40 )))
+	(print (align good bad)))
+(quit)
 (play (ts->period song))
-(define (loop)
-	(let ((input (scaled-start-at-zero (read-pattern (length song)))))
+(define (main-loop)
+	(let ((input (align song (scaled-start-at-zero
+				  (read-pattern (length song))))))
 		(print (pass? song input))
 		(print (diff song input))
-		(print (apply + (map abs (diff song input))))) (loop))
-(loop)
+		(print (apply + (map abs (diff song input))))) (main-loop))
+(main-loop)
