@@ -72,10 +72,10 @@
 						(loop (cddr input) idx))))))))
 
 	(loop input 0))
-(let ((good '(10 20 30 40 50 60)) (bad '(11 21 22 31 40 51 61 63)))
-	(print (align good bad)))
-(let ((good '(10 20 30 40 50 60)) (bad '(11 21 31 40  51 61)))
-	(print (align good bad)))
+;(let ((good '(10 20 30 40 50 60)) (bad '(11 21 22 31 40 51 61 63)))
+	;(print (align good bad)))
+;(let ((good '(10 20 30 40 50 60)) (bad '(11 21 31 40  51 61)))
+	;(print (align good bad)))
 ;(quit)
 
 (define (count-strikes song)
@@ -130,11 +130,15 @@
 	(loop-song '(b b 0 b b 0 b 0 b b 0 b b 0 0 b) 2)));honky tonk cowbell
 (define song (scaled-ts '(B 0 0 b b 0 0 B)));war
 
-(play (ts->period song))
-(define (main-loop)
+;(play (ts->period song))
+(define (ts-main-loop)
 	(let ((input (align song (scaled-start-at-zero
 				  (read-pattern (length song))))))
 		(print (pass? song input))
 		(print (diff song input))
-		(print (apply + (map abs (diff song input))))) (main-loop))
-(main-loop)
+		(print (apply + (map abs (diff song input))))) (ts-main-loop))
+(define HZ 10)
+(define (sampler n)
+	(thread-sleep! (/ 1 HZ)))
+
+(sampler 1)
