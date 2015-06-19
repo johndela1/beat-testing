@@ -137,8 +137,51 @@
 		(print (pass? song input))
 		(print (diff song input))
 		(print (apply + (map abs (diff song input))))) (ts-main-loop))
+(define (poll-keys)
+  (if (null? (file-select '(0) '() 0))
+        #f
+	(begin
+		(read-byte))))
+		;#t)))
+
 (define HZ 10)
 (define (sampler n)
-	(thread-sleep! (/ 1 HZ)))
+	(thread-sleep! (/ 1 HZ))
+	(cond
+		((= n 0) '())
+		(else (cons (poll-keys) (sampler (sub1 n))))))
 
-(sampler 1)
+(define (play-digital samples)
+	(thread-sleep! (/ 1 HZ))
+	(cond
+		((null? samples) 0)
+		((car samples)(play-sample noise) (play-digital (cdr samples)))
+		(else (play-digital (cdr samples)))))
+
+(define (n-tup-of n v)
+	(if (= n 0)
+		'()
+		(cons v (n-tup-of (sub1 n) v))))
+
+
+(define (expand samples)
+	(if (null? samples)
+		'()
+		(append (n-tup-of 10 (car samples)) (expand (cdr samples)))))
+
+(define (foo samples n)
+	(if (= n 0)
+		samples
+		(foo (cdr samples) (sub1 n))))
+
+
+(define (smash samples)
+	(cond
+		((null? samples) '())
+		((car samples) (print 'beat) (cons (car samples) (cdr samples)))
+		(else (print 'nobeat) (smash (foo samples 10)))))
+	
+
+(define samples (reverse (sampler 20)))
+(play-digital samples)
+(print (smash (expand samples)))
