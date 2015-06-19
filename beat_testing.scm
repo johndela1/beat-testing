@@ -32,16 +32,37 @@
 			(map (lambda (pair) (- (car pair) (cadr pair)))
 			     (zip song input)))))
 
-(define (read-pattern n)
+(define (fix-size l correct-size)
+	(define (n-tup n)
+		(if (= n 0)
+			'()
+			(cons -99 (n-tup (sub1 n)))))
+
+	(define (pad l amount)
+		(print 'amount: amount)
+		(append l (n-tup amount)))
+
+	(define (trunc l amount)
+		(if (= 0 amount)
+			'()
+			(cons (car l) (trunc (cdr l) (sub1 amount)))))
+	
+	(let ((diff (- correct-size (length l))))
+		(cond
+			((> diff 0) (pad l diff))
+			((< diff 0) (trunc l correct-size))
+			(else l))))
+
+(define (read-pattern size)
 	(define (loop n acc)
 		(cond
-		((= n 0) (map inexact->exact (reverse acc)))
+		((= n 0) (map inexact->exact (fix-size (reverse acc) size)))
 		(else
 			(file-select '(0) '() 100)
 			(let ((ts (current-milliseconds)))
 				(read-byte)
 				(loop (sub1 n) (cons ts acc))))))
-	(loop n '()))
+	(loop (+ 1 size) '()))
 
 (define (align song input)
 	(define (closest ts l smallest s_idx ret_idx)
@@ -128,7 +149,7 @@
 (define song (scaled-ts '(B 0 B 0 b B 0 B 0 b 0 b)));bell pattern
 (define song (scaled-ts
 	(loop-song '(b b 0 b b 0 b 0 b b 0 b b 0 0 b) 2)));honky tonk cowbell
-(define song (scaled-ts '(B 0 0 b b 0 0 B)));war
+(define song (scaled-ts '(B 0  b 0 B 0 b)))
 
 (play (ts->period song))
 (define (main-loop)
