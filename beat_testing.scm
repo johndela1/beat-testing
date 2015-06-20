@@ -144,7 +144,19 @@
 		(read-byte))))
 		;#t)))
 
-(define HZ 10)
+(define (n-tup-of n v)
+	(if (= n 0)
+		'()
+		(cons v (n-tup-of (sub1 n) v))))
+
+(define (digital-scale samples factor)
+	(cond
+		((null? samples) '())
+		((car samples) (cons (car samples)
+				     (digital-scale (cdr samples) factor)))
+		(else (append (n-tup-of factor #f) (digital-scale (cdr samples) factor)))))
+
+(define HZ 3)
 (define (sampler n)
 	(thread-sleep! (/ 1 HZ))
 	(cond
@@ -154,20 +166,22 @@
 (define (play-digital samples)
 	(thread-sleep! (/ 1 HZ))
 	(cond
-		((null? samples) 0)
-		((car samples)(play-sample noise) (play-digital (cdr samples)))
+		((null? samples) '())
+		((car samples) (play-sample noise)
+			       (cons (poll-keys) (play-digital (cdr samples))))
+		(else (cons (poll-keys) (play-digital (cdr samples))))))
+(define (play-digital-norec samples)
+	(thread-sleep! (/ 1 HZ))
+	(cond
+		((null? samples) '())
+		((car samples) (play-sample noise)
+			       (play-digital (cdr samples)))
 		(else (play-digital (cdr samples)))))
 
-(define (n-tup-of n v)
-	(if (= n 0)
-		'()
-		(cons v (n-tup-of (sub1 n) v))))
-
-
-(define (expand samples)
+(define (jexpand samples)
 	(if (null? samples)
 		'()
-		(append (n-tup-of 10 (car samples)) (expand (cdr samples)))))
+		(append (n-tup-of 10 (car samples)) (jexpand (cdr samples)))))
 
 (define (foo samples n)
 	(if (= n 0)
@@ -180,8 +194,31 @@
 		((null? samples) '())
 		((car samples) (print 'beat) (cons (car samples) (cdr samples)))
 		(else (print 'nobeat) (smash (foo samples 10)))))
-	
 
-(define samples (reverse (sampler 20)))
-(play-digital samples)
-(print (smash (expand samples)))
+(define (add-bool b1 b2)
+	(cond
+		((and b1 b2) 1)
+		(not (or b1 b2) 0)
+		(else 0)))
+	
+(define (dot-p l1 l2)
+	(if (or (null? l1) (null? l2))
+		'()
+		(cons
+			(add-bool (car l1) (car l2))
+			(dot-p (cdr l1) (cdr l2)))))
+
+;(define samples (reverse (sampler 20)))
+;(print (smash (jexpand samples)))
+;(play-digital samples)
+;(play-digital (digital-scale '(#t #f #t #f) 2))
+;(play-digital (digital-scale 
+;	(loop-song '(#t #t #f #t #t #f #t #f #t #t #f #t #t #f #f #t) 2)
+;	4))
+;(print (play-digital-norec (digital-scale '(10 #f 10 #f 10 #f 10 #f) 1)))
+
+;(print (play-digital (digital-scale '(10 #f 10 #f 10 #f 10 #f) 1)))
+;(print)
+;(print (digital-scale '(10 #f 10 #f 10 #f 10 #f) 1))
+(print (apply + (dot-p '(#t #f #t #f) '(#t #f #t #f))))
+
