@@ -72,11 +72,6 @@
 						(loop (cddr input) idx))))))))
 
 	(loop input 0))
-(let ((good '(10 20 30 40 50 60)) (bad '(11 21 22 31 40 51 61 63)))
-	(print (align good bad)))
-(let ((good '(10 20 30 40 50 60)) (bad '(11 21 31 40  51 61)))
-	(print (align good bad)))
-;(quit)
 
 (define (count-strikes song)
 	(define (loop song acc)
@@ -117,24 +112,46 @@
 		'()
 		(append song (loop-song song (sub1 n)))))
 
-(define song (scaled-ts '(x 0 0 0 x 0 0 0 0 0 0 0 x 0 0 0)))
-(define song (scaled-ts '(X 0 X X X 0)));two  over three
-(define song (scaled-ts '(X 0 X 0 X X 0 X X 0 x 0)));two over three
-(define song (scaled-ts '(x 0 x 0 x 0 x 0 0 x 0 x 0 x 0 x )))
-(define song (scaled-ts '(B 0 B 0 B 0 0 B 0 B 0 0)));son
-(define song (scaled-ts '(B 0 B 0 0 B 0 B 0 B 0 0)));rhumba
-(define song (scaled-ts '(B b B 0 0 B b B)));war
-(define song (scaled-ts '(B b B b b B b B)));war
-(define song (scaled-ts '(B 0 B 0 b B 0 B 0 b 0 b)));bell pattern
 (define song (scaled-ts
 	(loop-song '(b b 0 b b 0 b 0 b b 0 b b 0 0 b) 2)));honky tonk cowbell
-(define song (scaled-ts '(B 0 0 b b 0 0 B)));war
+(define song (scaled-ts '(B 0 b 0 b 0 B 0)));war
+
+(define (analyze song input acc)
+	(define (close-enough t1 t2)
+		(<= (abs (- t1 t2)) 30))
+
+	(define (remove i l)
+		(cond
+			((null? l) '())
+			((eqv? (car l) i) (cdr l))
+			(else (cons (car l) (remove i (cdr l))))))
+
+
+	(define (find-match ts l)
+		(cond
+			((null? l) '())
+			((close-enough (car l) ts) (car l))
+			(else (find-match ts (cdr l)))))
+	(cond
+		((null? song) (list (reverse acc) input))
+		(else (print 'output: (find-match (car song) input))
+		(let ((match (find-match (car song) input)))
+			(if (null? match)
+			(analyze (cdr song) input (cons 'missed acc))
+			(analyze (cdr song)
+			 	 (remove match input)
+				 (cons match acc)))))))
+
+(let ((song '(10 20 30 40))
+      (input '(10 20 30 35  47 )))
+(print	(analyze song input '())))
+;(quit)
 
 (play (ts->period song))
 (define (main-loop)
-	(let ((input (align song (scaled-start-at-zero
-				  (read-pattern (length song))))))
-		(print (pass? song input))
-		(print (diff song input))
-		(print (apply + (map abs (diff song input))))) (main-loop))
+	(let ((input (scaled-start-at-zero (read-pattern (length song)))))
+		(print 'song: song)
+		(print 'input: input)
+		(print 'error-report: (analyze song input '()))))
+
 (main-loop)
