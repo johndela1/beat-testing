@@ -28,18 +28,16 @@
 	(loop song 0))
 
 (define (read-pattern song)
-	(print song)
 	(define (loop budget acc)
 		(cond
 		((<= budget 0) (map inexact->exact (reverse acc)))
 		(else
-			(let*
+			(let
 			((t1 (current-milliseconds))
 			(io_s (not (null?
 				(file-select '(0) '() (/ budget 1000)))))
-			(t2 (current-milliseconds))
-			(used (- t2 t1)))
-				(loop (- budget used)
+			(t2 (current-milliseconds)))
+				(loop (- budget (- t2 t1))
 					(if io_s
 					(begin
 						(read-byte)
@@ -47,8 +45,7 @@
 					acc))))))
 	(if (null? song)
 		'()
-		(append (loop (+ (car song) 50) '())
-			(read-pattern (cdr song)))))
+		(loop (+ (last song) TOLER) '())))
 
 (define (loop-song song n)
 	(if (= n 0)
@@ -87,7 +84,7 @@
 		(map (lambda (x) (- x offset)) l)))
 
 (define song '(0 1000 2000 3000))
-(play (ts->deltas song))
+;(play (ts->deltas song))
 (define (main-loop)
 	(let ((input (start-at-zero (read-pattern song))))
 		(print 'song: song)
