@@ -8,15 +8,19 @@
 (define TOLER 300)
 
 (open-audio)
+
 (define noise (load-sample "boom.vorbis"))
+
+(define (millis->secs ts)
+	(/ ts 1000))
 
 (define (play song)
 	(if (null? song)
 		't
 		(begin
-			(thread-sleep! (/ (car song) 1000))
+			(thread-sleep! (millis->secs (car song)))
 			(play-sample noise)
-			(print 'XXXXXXXXX)
+			(print 'note)
 			(play (cdr song)))))
 		
 (define (ts->deltas song)
@@ -34,18 +38,25 @@
 		(else
 			(let
 			((t1 (current-milliseconds))
-			(io_s (not (null?
-				(file-select '(0) '() (/ budget 1000)))))
+			(timeout (null?
+				(file-select '(0) '() (millis->secs budget))))
 			(t2 (current-milliseconds)))
 				(loop (- budget (- t2 t1))
-					(if io_s
-					(begin
-						(read-byte)
-						(cons t2 acc))
-					acc))))))
+					(if timeout
+						(begin
+							(play-sample noise)
+							(print 'note)
+							acc)
+						(begin
+							(read-byte)
+							(cons t2 acc))))))))
 	(if (null? song)
 		'()
-		(loop (+ (last song) TOLER) '())))
+		(append (loop (+ (car song) TOLER) '())
+			(read-pattern (cdr song)))))
+	;(if (null? song)
+	;	'()
+	;	(loop (+ (last song) TOLER) '())))
 
 (define (loop-song song n)
 	(if (= n 0)
@@ -85,8 +96,9 @@
 
 (define song '(0 1000 2000 3000))
 ;(play (ts->deltas song))
+;(quit)
 (define (main-loop)
-	(let ((input (start-at-zero (read-pattern song))))
+	(let ((input (start-at-zero (read-pattern (ts->deltas song)))))
 		(print 'song: song)
 		(print 'input: input)
 		(print 'error-report: (analyze song input '()))))
