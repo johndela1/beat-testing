@@ -122,7 +122,11 @@
 	(cond
 		((<= n 0) (reverse acc))
 		(else
-			(if (= 0 (modulo n 500)) (print 'read-sample!))
+			(if (or (= n 1) (= 0 (modulo n 500)))
+			(begin
+			(print 'before)
+			(play-sample noise)
+			(print 'read-sample: n)))
 			(let ((sample (poll-keys)))
 				(thread-sleep! (/ 1 HZ))
 				(read-samples (sub1 n) (cons sample acc))))))
@@ -137,8 +141,9 @@
 	
 	
 ;(print (read-samples (* HZ 1) '()))
-(define song '(1 500 1000 1500))
+(define song '(500 1000 1500))
 (play (ts->deltas song))
+(thread-sleep! .5)
 (print (analyze song (samples->ts (read-samples (* HZ 1.6) '()) '() 0) '()))
 
 (quit)
