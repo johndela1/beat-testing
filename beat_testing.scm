@@ -34,14 +34,31 @@
 (define (read-pattern song)
 	(define (loop budget acc)
 		(cond
-		((<= budget 0) (map inexact->exact (reverse acc)))
+		((<= budget 0)
+			(define (grace budget acc)
+			(cond
+			((<= budget 0) acc)
+			(else (let
+			((t1 (current-milliseconds))
+			(timeout (null?
+				(file-select '(0) '() (millis->secs budget))))
+			(t2 (current-milliseconds)))
+				(grace (- budget (- t2 t1))
+					(if timeout
+						(begin
+							acc)
+						(begin
+							(read-byte)
+							(cons t2 acc))))))))
+			(map inexact->exact (reverse
+				(append acc (grace TOLER '())))))
 		(else
 			(let
 			((t1 (current-milliseconds))
 			(timeout (null?
 				(file-select '(0) '() (millis->secs budget))))
 			(t2 (current-milliseconds)))
-				(loop (- budget (- t2 t1))
+				(loop (- (- budget (- t2 t1)) TOLER)
 					(if timeout
 						(begin
 							(play-sample noise)
@@ -52,7 +69,7 @@
 							(cons t2 acc))))))))
 	(if (null? song)
 		'()
-		(append (loop (+ (car song) TOLER) '())
+		(append (loop (car song) '())
 			(read-pattern (cdr song)))))
 	;(if (null? song)
 	;	'()
@@ -94,9 +111,37 @@
 	(let ((offset (car l)))
 		(map (lambda (x) (- x offset)) l)))
 
-(define song '(0 1000 2000 3000))
-;(play (ts->deltas song))
-;(quit)
+(define (poll-keys)
+	(if (null? (file-select '(0) '() 0))
+		#f
+		(begin
+			(read-byte)
+			#t)))
+(define HZ 1000)
+(define (read-samples n acc)
+	(cond
+		((<= n 0) (reverse acc))
+		(else
+			(if (= 0 (modulo n 500)) (print 'read-sample!))
+			(let ((sample (poll-keys)))
+				(thread-sleep! (/ 1 HZ))
+				(read-samples (sub1 n) (cons sample acc))))))
+
+(define (samples->ts samples acc counter)
+	(cond
+		((null? samples) (reverse acc))
+		((car samples)
+			(samples->ts (cdr samples)
+				     (cons counter acc) (add1 counter)))
+		(else (samples->ts (cdr samples) acc (add1 counter)))))
+	
+	
+;(print (read-samples (* HZ 1) '()))
+(define song '(1 500 1000 1500))
+(play (ts->deltas song))
+(print (analyze song (samples->ts (read-samples (* HZ 1.6) '()) '() 0) '()))
+
+(quit)
 (define (main-loop)
 	(let ((input (start-at-zero (read-pattern (ts->deltas song)))))
 		(print 'song: song)
