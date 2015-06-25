@@ -14,76 +14,24 @@
 (define (millis->secs ts)
 	(/ ts 1000))
 
-(define (play song)
-	(if (null? song)
+(define (play pattern)
+	(if (null? pattern)
 		't
 		(begin
-			(thread-sleep! (millis->secs (car song)))
+			(thread-sleep! (millis->secs (car pattern)))
+			(print 'sleep-for (car pattern))
 			(play-sample noise)
 			;(print 'note)
-			(play (cdr song)))))
+			(play (cdr pattern)))))
 		
-(define (ts->deltas song)
-	(define (loop song prev_ts)
-		(if (null? song)
-			'()
-			(let ((ts (car song)))
-				(cons (- ts prev_ts) (loop (cdr song) ts)))))
-	(loop song 0))
-
-(define (read-pattern song)
-	(define (loop budget acc)
-		(cond
-		((<= budget 0)
-			(define (grace budget acc)
-			(cond
-			((<= budget 0) acc)
-			(else (let
-			((t1 (current-milliseconds))
-			(timeout (null?
-				(file-select '(0) '() (millis->secs budget))))
-			(t2 (current-milliseconds)))
-				(grace (- budget (- t2 t1))
-					(if timeout
-						(begin
-							acc)
-						(begin
-							(read-byte)
-							(cons t2 acc))))))))
-			(map inexact->exact (reverse
-				(append acc (grace TOLER '())))))
-		(else
-			(let
-			((t1 (current-milliseconds))
-			(timeout (null?
-				(file-select '(0) '() (millis->secs budget))))
-			(t2 (current-milliseconds)))
-				(loop (- (- budget (- t2 t1)) TOLER)
-					(if timeout
-						(begin
-							(play-sample noise)
-							(print 'note)
-							acc)
-						(begin
-							(read-byte)
-							(cons t2 acc))))))))
-	(if (null? song)
-		'()
-		(append (loop (car song) '())
-			(read-pattern (cdr song)))))
-	;(if (null? song)
-	;	'()
-	;	(loop (+ (last song) TOLER) '())))
-
-(define (loop-song song n)
-	(if (= n 0)
-		'()
-		(append song (loop-song song (sub1 n)))))
-
-(define song 
-	(loop-song '(b b 0 b b 0 b 0 b b 0 b b 0 0 b) 2));honky tonk cowbell
-
-(define (analyze song input acc)
+(define (analyze pattern input)
+	(define (deltas->ts deltas)
+		(define (loop deltas acc-time)
+			(if (null? deltas)
+				'()
+				(let ((ts (+ acc-time (car deltas))))
+				(cons ts (loop (cdr deltas) ts)))))
+		(loop deltas 0))
 	(define (close-enough t1 t2)
 		(<= (abs (- t1 t2)) TOLER))
 	(define (remove i l)
@@ -92,21 +40,26 @@
 			((eqv? (car l) i) (cdr l))
 			(else (cons (car l) (remove i (cdr l))))))
 	(define (find-match ts l)
+	(print 'find-match l)
+
 		(cond
 			((null? l) '())
 			((close-enough (car l) ts) (car l))
 			(else (find-match ts (cdr l)))))
-	(cond
-		((null? song) (list (reverse acc) input))
-		(else (let ((match (find-match (car song) input)))
+	(define (loop pattern input acc)
+		(cond
+		((null? pattern) (list (reverse acc) input))
+		(else (let ((match (find-match (car pattern) input)))
 			(if (null? match)
-			(analyze (cdr song) input
-				(cons (cons (car song) 'missed) acc))
-			(analyze (cdr song)
+			(loop (cdr pattern) input
+				(cons (cons (car pattern) 'missed) acc))
+			(loop (cdr pattern)
 			 	 (remove match input)
 				 (cons (cons 'err_tup
-				 	(cons (car song) (- match (car song))))
+				 	(cons (car pattern) (- match (car pattern))))
 				 	acc)))))))
+	(loop (deltas->ts pattern) (deltas->ts input) '()))
+
 (define (start-at-zero l)
 	(let ((offset (car l)))
 		(map (lambda (x) (- x offset)) l)))
@@ -118,43 +71,38 @@
 			(read-byte)
 			#t)))
 (define HZ 1000)
+
 (define (read-samples n)
-	(define (loop n acc)
+	(define (make-deltas samples i prev)
+		(cond
+		((null? samples) '()) ((car samples)
+			(cons (- i prev)
+				(make-deltas (cdr samples) (add1 i) i)))
+		(else (make-deltas (cdr samples) (add1 i) prev))))
+
+	(define (loop n)
 	(cond
-		((<= n 0) (reverse acc))
+		((<= n 0) '())
 		(else
-			(if (= 0 (modulo n 500))
-				(play-sample noise))
+			(if (= 0 (modulo n 500)) (play-sample noise))
+
 			(let ((sample (poll-keys)))
 				(thread-sleep! (/ 1 HZ))
-				(loop (sub1 n) (cons sample acc))))))
-	(loop n '()))
-
-
-(define (samples->ts samples)
-	(define (loop samples acc counter)
-		(cond
-		((null? samples) (reverse acc))
-		((car samples)
-			(loop (cdr samples)
-				     (cons counter acc) (add1 counter)))
-		(else (loop (cdr samples) acc (add1 counter)))))
-	(loop samples '() 0))
+				(cons sample (loop (sub1 n)))))))
+	(make-deltas (loop n) 0 0))
 	
-	
-;(print (read-samples (* HZ 1)))
-(define song '(0 500 1000 1500))
-;(play (ts->deltas song))
-;(thread-sleep! .5)
-(print (analyze song
-	(samples->ts (read-samples (* HZ 2)))
-	'()))
+(define (loop-pattern pattern n)
+	(if (= n 0)
+		'()
+		(append pattern (loop-pattern pattern (sub1 n)))))
+(define pattern
+	(loop-pattern '(b b 0 b b 0 b 0 b b 0 b b 0 0 b) 2));honky tonk cowbell
 
-(quit)
-(define (main-loop)
-	(let ((input (start-at-zero (read-pattern (ts->deltas song)))))
-		(print 'song: song)
-		(print 'input: input)
-		(print 'error-report: (analyze song input '()))))
+(define pattern '(0 500 500 500))
 
-(main-loop)
+(play pattern)
+(thread-sleep! .5)
+(let ((s (read-samples (* HZ 2))))
+(print (analyze pattern s))
+(print 'p: pattern)
+(print 'i: s))
