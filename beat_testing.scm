@@ -118,7 +118,8 @@
 			(read-byte)
 			#t)))
 (define HZ 1000)
-(define (read-samples n acc)
+(define (read-samples n)
+	(define (loop n acc)
 	(cond
 		((<= n 0) (reverse acc))
 		(else
@@ -126,22 +127,28 @@
 				(play-sample noise))
 			(let ((sample (poll-keys)))
 				(thread-sleep! (/ 1 HZ))
-				(read-samples (sub1 n) (cons sample acc))))))
+				(loop (sub1 n) (cons sample acc))))))
+	(loop n '()))
 
-(define (samples->ts samples acc counter)
-	(cond
+
+(define (samples->ts samples)
+	(define (loop samples acc counter)
+		(cond
 		((null? samples) (reverse acc))
 		((car samples)
-			(samples->ts (cdr samples)
+			(loop (cdr samples)
 				     (cons counter acc) (add1 counter)))
-		(else (samples->ts (cdr samples) acc (add1 counter)))))
+		(else (loop (cdr samples) acc (add1 counter)))))
+	(loop samples '() 0))
 	
 	
-;(print (read-samples (* HZ 1) '()))
-(define song '(500 1000 1500))
+;(print (read-samples (* HZ 1)))
+(define song '(0 500 1000 1500))
 ;(play (ts->deltas song))
 ;(thread-sleep! .5)
-(print (analyze song (samples->ts (read-samples (* HZ 1.6) '()) '() 0) '()))
+(print (analyze song
+	(samples->ts (read-samples (* HZ 2)))
+	'()))
 
 (quit)
 (define (main-loop)
