@@ -20,7 +20,7 @@
 		(begin
 			(thread-sleep! (millis->secs (car song)))
 			(play-sample noise)
-			(print 'note)
+			;(print 'note)
 			(play (cdr song)))))
 		
 (define (ts->deltas song)
@@ -101,7 +101,7 @@
 		(else (let ((match (find-match (car song) input)))
 			(if (null? match)
 			(analyze (cdr song) input
-				(cons (cons 'missed (car song) ) acc))
+				(cons (cons (car song) 'missed) acc))
 			(analyze (cdr song)
 			 	 (remove match input)
 				 (cons (cons 'err_tup
@@ -122,11 +122,8 @@
 	(cond
 		((<= n 0) (reverse acc))
 		(else
-			(if (or (= n 1) (= 0 (modulo n 500)))
-			(begin
-			(print 'before)
-			(play-sample noise)
-			(print 'read-sample: n)))
+			(if (= 0 (modulo n 500))
+				(play-sample noise))
 			(let ((sample (poll-keys)))
 				(thread-sleep! (/ 1 HZ))
 				(read-samples (sub1 n) (cons sample acc))))))
@@ -142,8 +139,8 @@
 	
 ;(print (read-samples (* HZ 1) '()))
 (define song '(500 1000 1500))
-(play (ts->deltas song))
-(thread-sleep! .5)
+;(play (ts->deltas song))
+;(thread-sleep! .5)
 (print (analyze song (samples->ts (read-samples (* HZ 1.6) '()) '() 0) '()))
 
 (quit)
