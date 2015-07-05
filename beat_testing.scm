@@ -25,40 +25,43 @@
 			(play (cdr pattern)))))
 		
 (define (analyze pattern input)
-	(define (deltas->ts deltas)
+	(define (deltas->tss deltas)
 		(define (loop deltas acc-time)
 			(if (null? deltas)
 				'()
 				(let ((ts (+ acc-time (car deltas))))
-				(cons ts (loop (cdr deltas) ts)))))
+					(cons ts (loop (cdr deltas) ts)))))
 		(loop deltas 0))
+
 	(define (close-enough t1 t2)
 		(<= (abs (- t1 t2)) TOLER))
+
 	(define (remove i l)
 		(cond
 			((null? l) '())
 			((eqv? (car l) i) (cdr l))
 			(else (cons (car l) (remove i (cdr l))))))
-	(define (find-match ts l)
-	(print 'find-match l)
 
+	(define (find-match ts l)
 		(cond
 			((null? l) '())
 			((close-enough (car l) ts) (car l))
 			(else (find-match ts (cdr l)))))
-	(define (loop pattern input acc)
-		(cond
-		((null? pattern) (list (reverse acc) input))
-		(else (let ((match (find-match (car pattern) input)))
-			(if (null? match)
-			(loop (cdr pattern) input
-				(cons (cons (car pattern) 'missed) acc))
-			(loop (cdr pattern)
-			 	 (remove match input)
-				 (cons (cons 'err_tup
-				 	(cons (car pattern) (- match (car pattern))))
-				 	acc)))))))
-	(loop (deltas->ts pattern) (deltas->ts input) '()))
+
+	(define (loop pattern input)
+		(if (null? pattern)
+			input
+			(let ((match (find-match (car pattern) input))
+					(head (car pattern))
+					(tail (cdr pattern)))
+				(if (null? match)
+					(cons (cons head 'missed)
+					      (loop tail input))
+					(cons (cons head (- match head))
+					      (loop tail
+						    (remove match input)))))))
+	(loop (deltas->tss pattern)
+	      (deltas->tss input)))
 
 (define (start-at-zero l)
 	(let ((offset (car l)))
@@ -73,6 +76,7 @@
 (define HZ 1000)
 
 (define (read-samples n)
+	;XXX early beat is not punished but rather set to perfect score
 	(define (make-deltas samples i prev)
 		(cond
 		((null? samples) '()) ((car samples)
@@ -84,7 +88,7 @@
 	(cond
 		((<= n 0) '())
 		(else
-			(if (= 0 (modulo n 500)) (play-sample noise))
+			;(if (= 0 (modulo n 500)) (play-sample noise))
 
 			(let ((sample (poll-keys)))
 				(thread-sleep! (/ 1 HZ))
