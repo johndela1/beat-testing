@@ -5,6 +5,7 @@
 (use srfi-18)
 (use sdl-mixer)
 
+(define HZ 1000)
 (define TOLER 300)
 
 (open-audio)
@@ -74,7 +75,6 @@
       (begin
 	(read-byte)
 	#t)))
-(define HZ 1000)
 
 (define (read-samples n)
   ;; XXX early beat is not punished but rather set to perfect score
@@ -100,14 +100,24 @@
   (if (= n 0)
       '()
       (append pattern (loop-pattern pattern (sub1 n)))))
-(define pattern
-  (loop-pattern '(b b 0 b b 0 b 0 b b 0 b b 0 0 b) 2)) ;; honky tonk cowbell
 
-(define pattern '(0 500 500 500))
+(define (pattern->ts pattern duration)
 
-(play pattern)
-(thread-sleep! .5)
-(let ((s (read-samples (* HZ 2))))
-  (print (analyze pattern s))
-  (print 'p: pattern)
-  (print 'i: s))
+  (let ((time (/ duration (length pattern))))
+    (define (convert pattern acc)
+      (cond
+       ((null? pattern) '())
+       ((= 0 (car pattern)) (convert (cdr pattern) (+ acc time)))
+       (else (cons acc (convert (cdr pattern) (+ acc time))))))
+    (convert pattern 0)))
+;; (define pattern '(0 500 500 500))
+
+;;
+;;(play pattern)
+;; (thread-sleep! .5)
+;; (let ((s (read-samples (* HZ 2))))
+;;   (print (analyze pattern s))
+;;   (print 'p: pattern)
+;;   (print 'i: s))
+(print (pattern->ts '(1 1 0 1) 2000))
+
