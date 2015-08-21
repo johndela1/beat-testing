@@ -1,0 +1,101 @@
+Scheme is a super simple language that you can actually learn quickly with
+a basic understanding of the ultra simple syntax.  I only use a tiny
+subset of the languge.
+
+Things that get evaluated are surrounded by parens.  The first item in the
+list is the actual function and the rest are the arguments to the func.
+
+like
+(+ 2 2 4)
+is 8
+(+ 2 2)
+that evalualtes to four
+(+ 2 (/ 8 4)) 
+same here... (/ 8 4) is 2  then substitue for (/ 8 4) and get (+ 2 2)
+
+This rule has some exceptions called special forms.
+'if' is a special form
+if 'if' is passed something that is true (true is any value except nil or an
+empty list)
+so
+(if 't)
+    (print 'true)
+    (print 'false))
+
+prints true... if we puta '() (empty list) in the if then it would print false
+
+if your expression you which to evalulate is more than one thing you can wrap
+a (begin) around it
+
+like
+
+(if 't
+    (begin
+	(print 'hey)
+	(print 'now))
+    (print 'false))
+
+
+here is another bit of code:
+
+(define HZ 1000)
+(let ((s (read-samples (* HZ 2))))
+
+this code says that HZ will be 1000
+so the inner most expression is (* HZ 2), which evals first.  To 2000
+This val is passed into read-samples, which will read two seconds of data
+from the keypresses.  then it will assign that list (two seconds worth
+of timestamps) to s
+then for all the code that follows in the let block will have access to s
+which is the signal or song.
+
+
+Here is the current code:
+https://github.com/johndela1/jj/blob/master/beat_testing.scm
+
+If you want to try to figure it out and have any questions let me know.
+The most complicated part is what we discussed. Since you understood
+that coupled with the fact that this code expresses that in a very
+simple way, I think you could fully understand the code in a short
+amount of time.  Let me know if you have any questions.
+
+
+how analyze works internally
+----------------------------
+
+Internally, there are two  lists of timestamps.  One is the perfect times,
+one is the users best try.
+
+Each timestamp in the perfect times list is searched for in the input.
+
+If it is found:
+	remove entry from users's list and append a tupple containing
+	the actual timestamp and the difference of the user ts and the
+	perfect ts
+else
+	append a tupple containing the perfect timestamp and the label
+	'missed'
+
+When done the users's list will have been changed into a list of extras
+
+and a new list consisting off tuples containing the error (or a missed
+indicator if no match within tolerance could be found)
+
+example:
+
+(((0 . missed) (500 . 50) (1000 . -38) (1500 . -133)) (1807))
+
+notes where at 0, 500, 1000, 1500 the note at 0 was missed, the one at
+500 was 50 ms too late, the one at 1000 was 38 ms early, the one at 1500
+was 133 ms early
+
+and there was an extra note at 1807 ms
+
+TODO
+----
+
+Plan to calculating the hamming distance and see how it compares
+to my analyze function. The pattern can be represented a bit array
+and bitwise XOR over both the input and reference bit arrays will
+be used at first.
+
