@@ -12,21 +12,26 @@
 
 (define noise (load-sample "boom.vorbis"))
 
-(define (millis->secs ts)
-  (/ ts 1000))
+(define (secs->millis t)
+  (* t 1000))
 
-(define (play pattern)
-  (if (null? pattern)
-      't
-      (begin
-	(thread-sleep! (millis->secs (car pattern)))
-	(print 'sleep-for (car pattern))
-	(play-sample noise)
-	;; (print 'note)
-	(play (cdr pattern)))))
+(define (millis->secs t)
+  (/ t 1000))
+
+(define (play pattern duration)
+  (let ((deltas (pattern->deltas pattern duration)))
+    (define (loop deltas)
+      (if (null? deltas)
+	  't
+	  (begin
+	    (thread-sleep! (millis->secs (car deltas)))
+					;(play-sample noise)
+	    (print 'note)
+	    (loop (cdr deltas)))))
+    (loop deltas)))
 
 
-(define (analyze pattern input)
+(define (analyze pattern input duration)
   (define (deltas->tss deltas)
     (define (loop deltas acc-time)
       (if (null? deltas)
@@ -50,19 +55,19 @@
      ((close-enough (car l) ts) (car l))
      (else (find-match ts (cdr l)))))
 
-  (define (loop pattern input)
-    (if (null? pattern)
+  (define (loop ref input)
+    (if (null? ref)
 	input
-	(let ((match (find-match (car pattern) input))
-	      (head (car pattern))
-	      (tail (cdr pattern)))
+	(let ((match (find-match (car ref) input))
+	      (head (car ref))
+	      (tail (cdr ref)))
 	  (if (null? match)
 	      (cons (cons head 'missed)
 		    (loop tail input))
 	      (cons (cons head (- match head))
 		    (loop tail
 			  (remove match input)))))))
-  (loop (deltas->tss pattern)
+  (loop (deltas->tss (pattern->deltas pattern duration))
 	(deltas->tss input)))
 
 (define (start-at-zero l)
@@ -78,6 +83,9 @@
 
 (define (read-samples n)
   ;; XXX early beat is not punished but rather set to perfect score
+  ;; because the early keypress is waiting on the keyboard buffer
+  ;; and when the programs reads it gets it at T0 and when
+  ;; the song starts at T0 it is seen as a perfect match
   (define (make-deltas samples i prev)
     (cond
      ((null? samples) '()) ((car samples)
@@ -90,34 +98,36 @@
      ((<= n 0) '())
      (else
       ;; (if (= 0 (modulo n 500)) (play-sample noise))
-
       (let ((sample (poll-keys)))
 	(thread-sleep! (/ 1 HZ))
 	(cons sample (loop (sub1 n)))))))
-  (make-deltas (loop n) 0 0))
+  (make-deltas (loop (* HZ n)) 0 0))
 
 (define (loop-pattern pattern n)
   (if (= n 0)
       '()
-      (append pattern (loop-pattern pattern (sub1 n)))))
+      (append pattern
+	      (loop-pattern pattern (sub1 n)))))
 
-(define (pattern->ts pattern duration)
-
-  (let ((time (/ duration (length pattern))))
+(define (pattern->deltas pattern duration)
+  (let ((time (/ (secs->millis duration) (length pattern))))
     (define (convert pattern acc)
       (cond
        ((null? pattern) '())
        ((= 0 (car pattern)) (convert (cdr pattern) (+ acc time)))
-       (else (cons acc (convert (cdr pattern) (+ acc time))))))
+       (else (cons acc (convert (cdr pattern) time)))))
     (convert pattern 0)))
-;; (define pattern '(0 500 500 500))
 
-;;
-;;(play pattern)
-;; (thread-sleep! .5)
-;; (let ((s (read-samples (* HZ 2))))
-;;   (print (analyze pattern s))
-;;   (print 'p: pattern)
-;;   (print 'i: s))
-(print (pattern->ts '(1 1 0 1) 2000))
 
+(define honky-tonk '(1 1 0 1 1 0 1 0 1 1 0 1 1 0 0 1))
+(define honky-tonk-2 (loop-pattern '(1 1 0 1 1 0 1 0 1 1 0 1 1 0 0 1) 2))
+(define pattern '(1 1 1 1))
+(define len-in-secs 2)
+
+(thread-sleep! .5)
+(play pattern len-in-secs)
+(thread-sleep! .5)
+(let ((samples  (read-samples len-in-secs)))
+   (print 'score: (analyze pattern samples len-in-secs))
+   (print 'ref-deltas: (pattern->deltas pattern len-in-secs))
+   (print 'sample-deltas: samples))
