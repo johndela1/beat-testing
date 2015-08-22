@@ -137,4 +137,10 @@
    (print 'sample-deltas- samples)))
 
 (define pattern-name (cadddr (argv)))
-(trial (eval (with-input-from-string pattern-name read)))
+
+(define result
+  (with-exception-handler
+   (lambda (exn)
+     (print 'use-valid-pattern) (quit))
+   (lambda ()
+     (trial (eval (with-input-from-string pattern-name read))))))
