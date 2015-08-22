@@ -123,7 +123,7 @@
 (define arpeg '(1 0 0 1 1 0 1))
 (define honky-tonk '(1 1 0 1 1 0 1 0 1 1 0 1 1 0 0 1))
 (define honky-tonk-2 (loop-pattern '(1 1 0 1 1 0 1 0 1 1 0 1 1 0 0 1) 2))
-(define sync '(1 0 1 0 0 1 0 1))
+(define syncopate '(1 0 1 0 0 1 0 1))
 (define calib '(1 1))
 
 (define (trial pattern)
