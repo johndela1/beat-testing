@@ -110,24 +110,31 @@
 	      (loop-pattern pattern (sub1 n)))))
 
 (define (pattern->deltas pattern duration)
-  (let ((time (/ (secs->millis duration) (length pattern))))
+  (let ((time (quotient (secs->millis duration) (length pattern))))
     (define (convert pattern acc)
       (cond
        ((null? pattern) '())
        ((= 0 (car pattern)) (convert (cdr pattern) (+ acc time)))
        (else (cons acc (convert (cdr pattern) time)))))
     (convert pattern 0)))
+;; maybe tolerance should be based on tempo
 
-
+(define easy '(1 1 1 1))
+(define arpeg '(1 0 0 1 1 0 1))
 (define honky-tonk '(1 1 0 1 1 0 1 0 1 1 0 1 1 0 0 1))
 (define honky-tonk-2 (loop-pattern '(1 1 0 1 1 0 1 0 1 1 0 1 1 0 0 1) 2))
-(define pattern '(1 1 1 1))
-(define len-in-secs 2)
+(define sync '(1 0 1 0 0 1 0 1))
+(define calib '(1 1))
 
-(thread-sleep! .5)
-(play pattern len-in-secs)
-(thread-sleep! .5)
-(let ((samples  (read-samples len-in-secs)))
-   (print 'score: (analyze pattern samples len-in-secs))
-   (print 'ref-deltas: (pattern->deltas pattern len-in-secs))
-   (print 'sample-deltas: samples))
+(define (trial pattern)
+ (define len-in-secs (quotient (length pattern) 2))
+ (thread-sleep! (/ len-in-secs (length pattern)))
+ (play pattern len-in-secs)
+ (thread-sleep! (/ len-in-secs (length pattern)))
+ (let ((samples  (read-samples len-in-secs)))
+   (print 'score--------- (analyze pattern samples len-in-secs))
+   (print 'ref-deltas---- (pattern->deltas pattern len-in-secs))
+   (print 'sample-deltas- samples)))
+
+(define pattern-name (cadddr (argv)))
+(trial (eval (with-input-from-string pattern-name read)))
