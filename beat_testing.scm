@@ -139,25 +139,31 @@
 (define honky-tonk '(8 (1 1 0 1 1 0 1 0 1 1 0 1 1 0 0 1)))
 (define honky-tonk-2 (loop-pattern honky-tonk 2))
 (define syncopate '(8 (1 0 1 0 0 1 0 1)))
-(define honky-tonk-4 '(4 (1 1 0 1 1 0 1 0 1 1 0 1 1 0 0 1)))
-(define honky-tonk-8 '(8 (1 1 0 1 1 0 1 0 1 1 0 1 1 0 0 1)))
 
 (define (trial pattern)
   (play pattern)
-  (print 'done-play)
-  (let* ((samples  (read-samples pattern))
-	 (results (analyze pattern samples))
-	 (passed (car results)))
-    (print 'results: results)
+  (print '-play-)
+  (analyze pattern (record pattern)))
+
+(define (report results)
+  (define (sum l)
+    (apply + l))
+  (let ((passed (car results))
+	(errors (cdr results)))
+    (print 'errors: errors)
     (if passed
-	(print 'passed: (apply + (map (lambda (x) (abs (cdr x)))
-				      (cdr results))))
-	(print 'failed))
-    (print 'ref-deltas: (pattern->deltas pattern))
-    (print 'sample-deltas- samples)))
+	(begin
+	  (let ((total-error
+		  (sum (map (lambda (x) (abs (cdr x)))
+			    (cdr results)))))
+	    (print 'passed)
+	    (print 'total-error: total-error)
+	    (print 'avg-error: (/ total-error (length errors)))))
+	(print 'failed))))
 
-(define pattern-name (cadddr (argv)))
-
-(if (defined? pattern-name)
-    (trial (eval (with-input-from-string pattern-name read)))
-    (print 'use-valid-pattern-name))
+;; main entry point
+(let ((pattern-name (cadddr (argv))))
+  (if (defined? pattern-name)
+      (let ((pattern (eval (with-input-from-string pattern-name read))))
+	(report (trial pattern)))
+      (print 'use-valid-pattern-name)))
