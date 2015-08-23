@@ -5,12 +5,20 @@
 (use srfi-18)
 (use sdl-mixer)
 
+(define BPM 80)
 (define HZ 1000)
 (define TOLER 300)
 
-(open-audio)
+;; (open-audio)
 
-(define noise (load-sample "boom.vorbis"))
+;; (define noise (load-sample "boom.vorbis"))
+(define (defined? v)
+  (call-with-current-continuation
+   (lambda (k)
+     (with-exception-handler
+      (lambda (exn)
+	(k #f))
+      (lambda () (eval (with-input-from-string v read)))))))
 
 (define (secs->millis t)
   (* t 1000))
@@ -18,20 +26,28 @@
 (define (millis->secs t)
   (/ t 1000))
 
-(define (play pattern duration)
-  (let ((deltas (pattern->deltas pattern duration)))
+(define (play pattern)
+  (let ((deltas (pattern->deltas pattern)))
     (define (loop deltas)
-      (if (null? deltas)
-	  't
+      (if (not (null? deltas))
 	  (begin
 	    (thread-sleep! (millis->secs (car deltas)))
-					;(play-sample noise)
+	    ;; (play-sample noise)
 	    (print 'note)
 	    (loop (cdr deltas)))))
-    (loop deltas)))
+    (loop deltas))
+  (let* ((note-div (car pattern)) (notes (cadr pattern))
+	 (delay-unit (/ (/ (length notes) note-div) (/ BPM 60))))
+    
+;;  (let* ((delay-unit (/ (/ (car pattern) 4))))
+    (print 'last: (last (cadr pattern)))
+    (thread-sleep!
+	   (if (= 0 (last (cadr pattern)))
+	       (* delay-unit 2)
+	       delay-unit))))
 
 
-(define (analyze pattern input duration)
+(define (analyze pattern input)
   (define (deltas->tss deltas)
     (define (loop deltas acc-time)
       (if (null? deltas)
@@ -67,7 +83,7 @@
 	      (cons (cons head (- match head))
 		    (loop tail
 			  (remove match input)))))))
-  (loop (deltas->tss (pattern->deltas pattern duration))
+  (loop (deltas->tss (pattern->deltas pattern))
 	(deltas->tss input)))
 
 (define (start-at-zero l)
@@ -81,7 +97,7 @@
 	(read-byte)
 	#t)))
 
-(define (read-samples n)
+(define (read-samples pattern)
   ;; XXX early beat is not punished but rather set to perfect score
   ;; because the early keypress is waiting on the keyboard buffer
   ;; and when the programs reads it gets it at T0 and when
@@ -92,7 +108,9 @@
 			    (cons (- i prev)
 				  (make-deltas (cdr samples) (add1 i) i)))
      (else (make-deltas (cdr samples) (add1 i) prev))))
-
+  (define (sample-count pattern)
+    (let ((note-div (car pattern)) (notes (cadr pattern)))
+      	 (* (/ (/ (length notes) (/ note-div 4)) (/ BPM 60)) HZ)))
   (define (loop n)
     (cond
      ((<= n 0) '())
@@ -101,7 +119,7 @@
       (let ((sample (poll-keys)))
 	(thread-sleep! (/ 1 HZ))
 	(cons sample (loop (sub1 n)))))))
-  (make-deltas (loop (* HZ n)) 0 0))
+  (make-deltas (loop (sample-count pattern)) 0 0))
 
 (define (loop-pattern pattern n)
   (if (= n 0)
@@ -109,38 +127,35 @@
       (append pattern
 	      (loop-pattern pattern (sub1 n)))))
 
-(define (pattern->deltas pattern duration)
-  (let ((time (quotient (secs->millis duration) (length pattern))))
+(define (pattern->deltas pattern)
+  (let* ((note-div (car pattern)) (notes (cadr pattern))
+    	 (time (secs->millis (/ (/ (length notes) note-div) (/ BPM 60)))))
     (define (convert pattern acc)
       (cond
        ((null? pattern) '())
        ((= 0 (car pattern)) (convert (cdr pattern) (+ acc time)))
        (else (cons acc (convert (cdr pattern) time)))))
-    (convert pattern 0)))
+    (convert notes 0)))
 ;; maybe tolerance should be based on tempo
 
-(define easy '(1 1 1 1))
-(define arpeg '(1 0 0 1 1 0 1))
-(define honky-tonk '(1 1 0 1 1 0 1 0 1 1 0 1 1 0 0 1))
+(define easy-4 '(4 (1 1 1 1)))
+(define easy-8 '(8 (1 1 1 1)))
+(define honky-tonk '(8 (1 1 0 1 1 0 1 0 1 1 0 1 1 0 0 1)))
 (define honky-tonk-2 (loop-pattern honky-tonk 2))
-(define syncopate '(1 0 1 0 0 1 0 1))
-(define calib '(1 1))
+(define syncopate '(8 (1 0 1 0 0 1 0 1)))
+(define honky-tonk-4 '(4 (1 1 0 1 1 0 1 0 1 1 0 1 1 0 0 1)))
+(define honky-tonk-8 '(8 (1 1 0 1 1 0 1 0 1 1 0 1 1 0 0 1)))
 
 (define (trial pattern)
- (define len-in-secs (quotient (length pattern) 2))
- (thread-sleep! (/ len-in-secs (length pattern)))
- (play pattern len-in-secs)
- (thread-sleep! (/ len-in-secs (length pattern)))
- (let ((samples  (read-samples len-in-secs)))
-   (print 'score--------- (analyze pattern samples len-in-secs))
-   (print 'ref-deltas---- (pattern->deltas pattern len-in-secs))
-   (print 'sample-deltas- samples)))
+  (play pattern)
+  (print 'done-play)
+  (let ((samples  (read-samples pattern)))
+    (print 'score--------- (analyze pattern samples))
+    (print 'ref-deltas---- (pattern->deltas pattern))
+    (print 'sample-deltas- samples)))
 
 (define pattern-name (cadddr (argv)))
 
-(define result
-  (with-exception-handler
-   (lambda (exn)
-     (print 'use-valid-pattern) (quit))
-   (lambda ()
-     (trial (eval (with-input-from-string pattern-name read))))))
+(if (defined? pattern-name)
+    (trial (eval (with-input-from-string pattern-name read)))
+    (print 'use-valid-pattern-name))
