@@ -38,14 +38,11 @@
     (loop deltas))
   (let* ((note-div (car pattern)) (notes (cadr pattern))
 	 (delay-unit (/ (/ (length notes) note-div) (/ BPM 60))))
-    
-;;  (let* ((delay-unit (/ (/ (car pattern) 4))))
-    (print 'last: (last (cadr pattern)))
+    ;; XXX need to account for more than one 0
     (thread-sleep!
 	   (if (= 0 (last (cadr pattern)))
 	       (* delay-unit 2)
 	       delay-unit))))
-
 
 (define (analyze pattern input)
   (define (deltas->tss deltas)
@@ -85,10 +82,6 @@
 			  (remove match input)))))))
   (loop (deltas->tss (pattern->deltas pattern))
 	(deltas->tss input)))
-
-(define (start-at-zero l)
-  (let ((offset (car l)))
-    (map (lambda (x) (- x offset)) l)))
 
 (define (poll-keys)
   (if (null? (file-select '(0) '() 0))
