@@ -80,8 +80,17 @@
 	      (cons (cons head (- match head))
 		    (loop tail
 			  (remove match input)))))))
-  (loop (deltas->tss (pattern->deltas pattern))
-	(deltas->tss input)))
+  (let ((results (loop (deltas->tss (pattern->deltas pattern))
+		    (deltas->tss input))))
+    (define (passed? res)
+      (cond
+       ((null? res) 't)
+       ((and
+	 (not (atom? (car res)))
+	 (integer? (cdar res)))
+	(passed? (cdr res)))
+       (else #f)))
+    (cons (passed? results) results))) 
 
 (define (poll-keys)
   (if (null? (file-select '(0) '() 0))
@@ -142,9 +151,15 @@
 (define (trial pattern)
   (play pattern)
   (print 'done-play)
-  (let ((samples  (read-samples pattern)))
-    (print 'score--------- (analyze pattern samples))
-    (print 'ref-deltas---- (pattern->deltas pattern))
+  (let* ((samples  (read-samples pattern))
+	 (results (analyze pattern samples))
+	 (passed (car results)))
+    (print 'results: results)
+    (if passed
+	(print 'passed: (apply + (map (lambda (x) (abs (cdr x)))
+				      (cdr results))))
+	(print 'failed))
+    (print 'ref-deltas: (pattern->deltas pattern))
     (print 'sample-deltas- samples)))
 
 (define pattern-name (cadddr (argv)))
