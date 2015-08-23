@@ -130,8 +130,8 @@
 	      (loop-pattern pattern (sub1 n)))))
 
 (define (pattern->deltas pattern)
-  (let* ((note-div (car pattern)) (notes (cadr pattern))
-    	 (time (secs->millis (/ (/ (length notes) note-div) (/ BPM 60)))))
+  (let* ((beat-div (car pattern)) (notes (cadr pattern))
+    	 (time (secs->millis (/ (/ 4 beat-div) (/ BPM 60)))))
     (define (convert pattern acc)
       (cond
        ((null? pattern) '())
