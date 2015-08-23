@@ -92,21 +92,20 @@
        (else #f)))
     (cons (passed? results) results))) 
 
-(define (poll-keys)
-  (if (null? (file-select '(0) '() 0))
-      #f
-      (begin
-	(read-byte)
-	#t)))
-
-(define (read-samples pattern)
+(define (record pattern)
   ;; XXX early beat is not punished but rather set to perfect score
   ;; because the early keypress is waiting on the keyboard buffer
   ;; and when the programs reads it gets it at T0 and when
   ;; the song starts at T0 it is seen as a perfect match
+  (define (poll-keys)
+    (if (null? (file-select '(0) '() 0))
+	#f
+	(begin
+	  (read-byte)
+	  #t)))
   (define (sample-count pattern)
     (let ((note-div (car pattern)) (notes (cadr pattern)))
-      	 (* (/ (/ (length notes) (/ note-div 4)) (/ BPM 60)) HZ)))
+      (* (/ (/ (length notes) (/ note-div 4)) (/ BPM 60)) HZ)))
   (define (loop n delta)
     (cond
      ((<= n 0) '())
