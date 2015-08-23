@@ -59,11 +59,8 @@
     (<= (abs (- t1 t2)) TOLER))
 
   (define (remove i l)
-    (cond
-     ((null? l) '())
-     ((eqv? (car l) i) (cdr l))
-     (else (cons (car l) (remove i (cdr l))))))
-
+    (filter (lambda (x) (not (eqv? x i))) l))
+   
   (define (find-match ts l)
     (cond
      ((null? l) '())
