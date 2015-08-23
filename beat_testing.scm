@@ -27,18 +27,19 @@
   (/ t 1000))
 
 (define (play pattern)
-  (define (wait-for-rest-notes)
-    (let* ((note-div (car pattern)) (notes (cadr pattern))
-	 (delay-unit (/ (/ (length notes) note-div) (/ BPM 60))))
-    (thread-sleep!
-	   (if (= 0 (last (cadr pattern)))
-	       (* delay-unit 2)
-	       delay-unit))))
-
+  (define (rest-time)
+    (let* ((beat-div (car pattern))
+	   (notes (cadr pattern))
+	   (time (/ (/ 4 beat-div) (/ BPM 60))))
+      (define (calc-delay rests acc)
+	(if (= 0 (car rests))
+	    (calc-delay (cdr rests) (+ acc time))
+	    (+ acc time)))
+      (calc-delay  (reverse notes) 0)))
   (let ((deltas (pattern->deltas pattern)))
     (define (loop deltas)
       (if (null? deltas)
-	  (wait-for-rest-notes)
+	  (thread-sleep! (rest-time))
 	  (begin
 	    (thread-sleep! (millis->secs (car deltas)))
 	    ;; (play-sample noise)
