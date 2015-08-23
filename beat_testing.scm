@@ -106,24 +106,19 @@
   ;; because the early keypress is waiting on the keyboard buffer
   ;; and when the programs reads it gets it at T0 and when
   ;; the song starts at T0 it is seen as a perfect match
-  (define (make-deltas samples i prev)
-    (cond
-     ((null? samples) '()) ((car samples)
-			    (cons (- i prev)
-				  (make-deltas (cdr samples) (add1 i) i)))
-     (else (make-deltas (cdr samples) (add1 i) prev))))
   (define (sample-count pattern)
     (let ((note-div (car pattern)) (notes (cadr pattern)))
       	 (* (/ (/ (length notes) (/ note-div 4)) (/ BPM 60)) HZ)))
-  (define (loop n)
+  (define (loop n delta)
     (cond
      ((<= n 0) '())
      (else
-      ;; (if (= 0 (modulo n 500)) (play-sample noise))
       (let ((sample (poll-keys)))
 	(thread-sleep! (/ 1 HZ))
-	(cons sample (loop (sub1 n)))))))
-  (make-deltas (loop (sample-count pattern)) 0 0))
+	(if sample
+	    (cons delta (loop (sub1 n) 0))
+	    (loop (sub1 n) (add1 delta)))))))
+  (loop (sample-count pattern) 0))
 
 (define (loop-pattern pattern n)
   (if (= n 0)
