@@ -5,7 +5,6 @@
 (use srfi-18)
 (use sdl-mixer)
 
-(define BPM 80)
 (define HZ 1000)
 (define TOLER 300)
 
@@ -26,17 +25,17 @@
 (define (millis->secs t)
   (/ t 1000))
 
-(define (play pattern)
+(define (play pattern bpm)
   (define (rest-time)
     (let* ((beat-div (car pattern))
 	   (notes (cadr pattern))
-	   (time (/ (/ 4 beat-div) (/ BPM 60))))
+	   (time (/ (/ 4 beat-div) (/ bpm 60))))
       (define (calc-delay rests acc)
 	(if (= 0 (car rests))
 	    (calc-delay (cdr rests) (+ acc time))
 	    (+ acc time)))
       (calc-delay  (reverse notes) 0)))
-  (let ((deltas (pattern->deltas pattern)))
+  (let ((deltas (pattern->deltas pattern bpm)))
     (define (loop deltas)
       (if (null? deltas)
 	  (thread-sleep! (rest-time))
@@ -47,7 +46,7 @@
 	    (loop (cdr deltas)))))
     (loop deltas)))
 
-(define (analyze pattern input)
+(define (analyze pattern input bpm)
   (define (deltas->tss deltas)
     (define (loop deltas acc-time)
       (if (null? deltas)
@@ -72,15 +71,15 @@
     (if (null? ref)
 	input
 	(let ((match (find-match (car ref) input))
-	      (head (car ref))
-	      (tail (cdr ref)))
+	      (sample (car ref))
+	      (samples (cdr ref)))
 	  (if (null? match)
-	      (cons (cons head 'missed)
-		    (loop tail input))
-	      (cons (cons head (- match head))
-		    (loop tail
+	      (cons (cons sample 'missed)
+		    (loop samples input))
+	      (cons (cons sample (- match sample))
+		    (loop samples
 			  (remove match input)))))))
-  (let ((results (loop (deltas->tss (pattern->deltas pattern))
+  (let ((results (loop (deltas->tss (pattern->deltas pattern bpm))
 		    (deltas->tss input))))
     (define (passed? res)
       (cond
@@ -92,7 +91,7 @@
        (else #f)))
     (cons (passed? results) results))) 
 
-(define (record pattern)
+(define (record pattern bpm)
   ;; XXX early beat is not punished but rather set to perfect score
   ;; because the early keypress is waiting on the keyboard buffer
   ;; and when the programs reads it gets it at T0 and when
@@ -105,7 +104,7 @@
 	  #t)))
   (define (sample-count pattern)
     (let ((note-div (car pattern)) (notes (cadr pattern)))
-      (* (/ (/ (length notes) (/ note-div 4)) (/ BPM 60)) HZ)))
+      (* (/ (/ (length notes) (/ note-div 4)) (/ bpm 60)) HZ)))
   (define (loop n delta)
     (cond
      ((<= n 0) '())
@@ -123,9 +122,9 @@
       (append pattern
 	      (loop-pattern pattern (sub1 n)))))
 
-(define (pattern->deltas pattern)
+(define (pattern->deltas pattern bpm)
   (let* ((beat-div (car pattern)) (notes (cadr pattern))
-    	 (time (secs->millis (/ (/ 4 beat-div) (/ BPM 60)))))
+    	 (time (secs->millis (/ (/ 4 beat-div) (/ bpm 60)))))
     (define (convert pattern acc)
       (cond
        ((null? pattern) '())
@@ -139,11 +138,12 @@
 (define honky-tonk '(8 (1 1 0 1 1 0 1 0 1 1 0 1 1 0 0 1)))
 (define honky-tonk-2 (loop-pattern honky-tonk 2))
 (define syncopate '(8 (1 0 1 0 0 1 0 1)))
+(define syncopate-2 (loop-pattern syncopate 2))
 
-(define (trial pattern)
-  (play pattern)
+(define (trial pattern bpm)
+  (play pattern bpm)
   (print '-play-)
-  (analyze pattern (record pattern)))
+  (analyze pattern (record pattern bpm) bpm))
 
 (define (report results)
   (define (sum l)
@@ -162,8 +162,11 @@
 	(print 'failed))))
 
 ;; main entry point
-(let ((pattern-name (cadddr (argv))))
-  (if (defined? pattern-name)
-      (let ((pattern (eval (with-input-from-string pattern-name read))))
-	(report (trial pattern)))
-      (print 'use-valid-pattern-name)))
+(if (= (length (argv)) 5)
+    (let ((pattern-name (list-ref (argv) 3))
+	  (bpm (string->number (list-ref (argv) 4))))
+      (if (defined? pattern-name)
+	  (let ((pattern (eval (with-input-from-string pattern-name read))))
+	    (report (trial pattern bpm)))
+	  (print 'use-valid-pattern-name)))
+    (print 'must-specify-pattern-and-bpm))
