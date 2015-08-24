@@ -1,3 +1,5 @@
+the main program is beat_testing.scm
+
 Scheme is a super simple language that you can actually learn quickly with
 a basic understanding of the ultra simple syntax.  I only use a tiny
 subset of the languge.
@@ -99,3 +101,4 @@ to my analyze function. The pattern can be represented a bit array
 and bitwise XOR over both the input and reference bit arrays will
 be used at first.
 
+consider making tolerance based on bpm

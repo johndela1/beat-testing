@@ -131,7 +131,6 @@
        ((= 0 (car pattern)) (convert (cdr pattern) (+ acc time)))
        (else (cons acc (convert (cdr pattern) time)))))
     (convert notes 0)))
-;; maybe tolerance should be based on tempo
 
 (define easy-4 '(4 (1 1 1 1)))
 (define easy-8 '(8 (1 1 1 1)))
