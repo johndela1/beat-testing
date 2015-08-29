@@ -5,12 +5,13 @@
 (use srfi-18)
 (use sdl-mixer)
 
-(define HZ 1000)
+(define HZ 500)
 (define TOLER 300)
-
+(define BEAT-DIV 4)
+(define SECS/MIN 60)
 ;; (open-audio)
-
 ;; (define noise (load-sample "boom.vorbis"))
+
 (define (defined? v)
   (call-with-current-continuation
    (lambda (k)
@@ -25,11 +26,15 @@
 (define (millis->secs t)
   (/ t 1000))
 
+(define (bpm->bps bpm)
+  (/ bpm SECS/MIN))
+
 (define (play pattern bpm)
   (define (rest-time)
-    (let* ((beat-div (car pattern))
+    (let* ((note-div (car pattern))
 	   (notes (cadr pattern))
-	   (time (/ (/ 4 beat-div) (/ bpm 60))))
+	   (bps (bpm->bps bpm))
+	   (time (/ (/ BEAT-DIV note-div) bps)))
       (define (calc-delay rests acc)
 	(if (= 0 (car rests))
 	    (calc-delay (cdr rests) (+ acc time))
@@ -102,38 +107,47 @@
 	(begin
 	  (read-byte)
 	  #t)))
-  (define (sample-count pattern)
-    (let ((note-div (car pattern)) (notes (cadr pattern)))
-      (* (/ (/ (length notes) (/ note-div 4)) (/ bpm 60)) HZ)))
-  (define (loop n delta)
-    (cond
-     ((<= n 0) '())
-     (else
-      (let ((sample (poll-keys)))
-	(thread-sleep! (/ 1 HZ))
-	(if sample
-	    (cons delta (loop (sub1 n) 0))
-	    (loop (sub1 n) (add1 delta)))))))
-  (loop (sample-count pattern) 0))
+  (define (seconds/beat bpm)
+    (/ SECS/MIN bpm))
+  (let* ((note-div (car pattern))
+	 (notes (cadr pattern))
+	 (beat-duration (* (seconds/beat bpm) HZ))
+	 (note-duration (inexact->exact
+			 (* beat-duration (/ BEAT-DIV note-div))))
+	 (sample-count (* (length notes) note-duration)))
+    (define (loop n delta)
+      (cond
+       ((<= n 0) '())
+       (else
+	(let ((sample (poll-keys)))
+	  (thread-sleep! (/ 1 HZ))
+	  (if (= (modulo n beat-duration) 0)
+	      (print 'one))
+	  (if sample
+	      (cons (/ delta (/ HZ 1000)) (loop (sub1 n) 0))
+	      (loop (sub1 n) (add1 delta)))))))
+    (loop sample-count 0)))
 
 (define (loop-pattern pattern n)
+  ;; XXX needs to handle 'pattern' not list of notes
   (if (= n 0)
       '()
       (append pattern
 	      (loop-pattern pattern (sub1 n)))))
 
 (define (pattern->deltas pattern bpm)
-  (let* ((beat-div (car pattern)) (notes (cadr pattern))
-    	 (time (secs->millis (/ (/ 4 beat-div) (/ bpm 60)))))
-    (define (convert pattern acc)
+  (let* ((note-div (car pattern)) (notes (cadr pattern))
+    	 (note-duration (secs->millis
+			 (/ (/ BEAT-DIV note-div) (/ bpm 60)))))
+    (define (convert notes acc)
       (cond
-       ((null? pattern) '())
-       ((= 0 (car pattern)) (convert (cdr pattern) (+ acc time)))
-       (else (cons acc (convert (cdr pattern) time)))))
+       ((null? notes) '())
+       ((= 0 (car notes)) (convert (cdr notes) (+ acc note-duration)))
+       (else (cons acc (convert (cdr notes) note-duration)))))
     (convert notes 0)))
 
-(define easy-4 '(4 (1 1 1 1)))
-(define easy-8 '(8 (1 1 1 1)))
+(define easy-4 '(4 (1 1 1 1 1 1 1 1)))
+(define easy-8 '(8 (1 1 1 1 1 1 1)))
 (define honky-tonk '(8 (1 1 0 1 1 0 1 0 1 1 0 1 1 0 0 1)))
 (define honky-tonk-2 (loop-pattern honky-tonk 2))
 (define syncopate '(8 (1 0 1 0 0 1 0 1)))
@@ -141,7 +155,6 @@
 
 (define (trial pattern bpm)
   (play pattern bpm)
-  (print '-play-)
   (analyze pattern (record pattern bpm) bpm))
 
 (define (report results)
