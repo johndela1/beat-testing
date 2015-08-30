@@ -122,7 +122,7 @@
 	(let ((sample (poll-keys)))
 	  (thread-sleep! (/ 1 HZ))
 	  (if (= (modulo n beat-duration) 0)
-	      (print 'one))
+	      (print 'beat))
 	  (if sample
 	      (cons (/ delta (/ HZ 1000)) (loop (sub1 n) 0))
 	      (loop (sub1 n) (add1 delta)))))))
