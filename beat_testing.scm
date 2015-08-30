@@ -7,7 +7,7 @@
 
 (define HZ 500)
 (define TOLER 300)
-(define BEAT-DIV 4)
+(define BEAT 4)
 (define SECS/MIN 60)
 ;; (open-audio)
 ;; (define noise (load-sample "boom.vorbis"))
@@ -34,7 +34,7 @@
     (let* ((note-div (car pattern))
 	   (notes (cadr pattern))
 	   (bps (bpm->bps bpm))
-	   (time (/ (/ BEAT-DIV note-div) bps)))
+	   (time (/ (/ BEAT note-div) bps)))
       (define (calc-delay rests acc)
 	(if (= 0 (car rests))
 	    (calc-delay (cdr rests) (+ acc time))
@@ -111,17 +111,17 @@
     (/ SECS/MIN bpm))
   (let* ((note-div (car pattern))
 	 (notes (cadr pattern))
-	 (beat-duration (* (seconds/beat bpm) HZ))
-	 (note-duration (inexact->exact
-			 (* beat-duration (/ BEAT-DIV note-div))))
-	 (sample-count (* (length notes) note-duration)))
+	 (cycles/beat (* (seconds/beat bpm) HZ))
+	 (cycles/note (inexact->exact
+			 (* cycles/beat (/ BEAT note-div))))
+	 (sample-count (* (length notes) cycles/note)))
     (define (loop n delta)
       (cond
        ((<= n 0) '())
        (else
 	(let ((sample (poll-keys)))
 	  (thread-sleep! (/ 1 HZ))
-	  (if (= (modulo n beat-duration) 0)
+	  (if (= (modulo n cycles/beat) 0)
 	      (print 'beat))
 	  (if sample
 	      (cons (/ delta (/ HZ 1000)) (loop (sub1 n) 0))
@@ -138,7 +138,7 @@
 (define (pattern->deltas pattern bpm)
   (let* ((note-div (car pattern)) (notes (cadr pattern))
     	 (note-duration (secs->millis
-			 (/ (/ BEAT-DIV note-div) (/ bpm 60)))))
+			 (/ (/ BEAT note-div) (/ bpm 60)))))
     (define (convert notes acc)
       (cond
        ((null? notes) '())
