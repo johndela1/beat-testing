@@ -147,11 +147,14 @@
     (convert notes 0)))
 
 (define easy-4 '(4 (1 1 1 1 1 1 1 1)))
-(define easy-8 '(8 (1 1 1 1 1 1 1)))
+(define easy-8 '(8 (1 1 1 1 1 1 1 1)))
 (define honky-tonk '(8 (1 1 0 1 1 0 1 0 1 1 0 1 1 0 0 1)))
 (define honky-tonk-2 (loop-pattern honky-tonk 2))
 (define syncopate '(8 (1 0 1 0 0 1 0 1)))
 (define syncopate-2 (loop-pattern syncopate 2))
+(define green-sleeves '(6
+			(1 0 0 0 1 0  1 0 0 1 1 0  1 0 0 0 1 0  1 0 0 1 1 0)))
+(define easy-3 '(3 (1 1 1 1 1 1)))
 
 (define (trial pattern bpm)
   (play pattern bpm)
