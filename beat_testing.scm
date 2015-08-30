@@ -137,8 +137,8 @@
 
 (define (pattern->deltas pattern bpm)
   (let* ((note-div (car pattern)) (notes (cadr pattern))
-    	 (note-duration (secs->millis
-			 (/ (/ BEAT note-div) (/ bpm 60)))))
+    	 (note-duration (inexact->exact (round (secs->millis
+			 (/ (/ BEAT note-div) (bpm->bps bpm)))))))
     (define (convert notes acc)
       (cond
        ((null? notes) '())
