@@ -39,9 +39,10 @@
 	   (note-duration (/ (/ BEAT note-div) (bpm->bps bpm))))
       (define (calc-delay rests acc)
 	(if (= 0 (car rests))
-	    (calc-delay (cdr rests) (+ acc note_duration))
+	    (calc-delay (cdr rests) (+ acc note-duration))
 	    (+ acc note-duration)))
       (calc-delay  (reverse notes) 0)))
+  
   (let ((deltas (pattern->deltas pattern bpm)))
     (define (loop deltas)
       (if (null? deltas)
