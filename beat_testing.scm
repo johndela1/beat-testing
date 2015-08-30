@@ -29,6 +29,9 @@
 (define (bpm->bps bpm)
   (/ bpm SECS/MIN))
 
+(define (ensure-int x)
+  (inexact->exact (round x)))
+		   
 (define (play pattern bpm)
   (define (rest-time)
     (let* ((note-div (car pattern))
@@ -111,10 +114,10 @@
     (/ SECS/MIN bpm))
   (let* ((note-div (car pattern))
 	 (notes (cadr pattern))
-	 (cycles/beat (inexact->exact (round
-				       (* (seconds/beat bpm) HZ))))
-	 (cycles/note (inexact->exact (round
-				       (* cycles/beat (/ BEAT note-div)))))
+	 (cycles/beat (ensure-int
+		       (* (seconds/beat bpm) HZ)))
+	 (cycles/note (ensure-int
+		       (* cycles/beat (/ BEAT note-div))))
 	 (sample-count (* (length notes) cycles/note)))
     (define (loop n delta)
       (cond
@@ -138,8 +141,8 @@
 
 (define (pattern->deltas pattern bpm)
   (let* ((note-div (car pattern)) (notes (cadr pattern))
-    	 (note-duration (inexact->exact (round (secs->millis
-			 (/ (/ BEAT note-div) (bpm->bps bpm)))))))
+    	 (note-duration (ensure-int (secs->millis
+			 (/ (/ BEAT note-div) (bpm->bps bpm))))))
     (define (convert notes acc)
       (cond
        ((null? notes) '())
