@@ -111,9 +111,10 @@
     (/ SECS/MIN bpm))
   (let* ((note-div (car pattern))
 	 (notes (cadr pattern))
-	 (cycles/beat (* (seconds/beat bpm) HZ))
-	 (cycles/note (inexact->exact
-			 (* cycles/beat (/ BEAT note-div))))
+	 (cycles/beat (inexact->exact (round
+				       (* (seconds/beat bpm) HZ))))
+	 (cycles/note (inexact->exact (round
+				       (* cycles/beat (/ BEAT note-div)))))
 	 (sample-count (* (length notes) cycles/note)))
     (define (loop n delta)
       (cond
