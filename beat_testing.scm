@@ -140,7 +140,8 @@
 	      (loop-pattern pattern (sub1 n)))))
 
 (define (pattern->deltas pattern bpm)
-  (let* ((note-div (car pattern)) (notes (cadr pattern))
+  (let* ((note-div (car pattern))
+	 (notes (cadr pattern))
     	 (note-duration (ensure-int (secs->millis
 			 (/ (/ BEAT note-div) (bpm->bps bpm))))))
     (define (convert notes acc)
@@ -153,12 +154,13 @@
 (define easy-4 '(4 (1 1 1 1)))
 (define easy-8 '(8 (1 1 1 1 1 1 1 1)))
 
-(define honky-tonk '(8 (1 1 0 1 1 0 1 0 1 1 0 1 1 0 0 1)))
+(define honky-tonk '(8 (1 1 0 1 1 0 1 0  1 1 0 1 1 0 0 1)))
 (define honky-tonk-2 (loop-pattern honky-tonk 2))
 (define syncopate '(8 (1 0 1 0 0 1 0 1)))
 (define syncopate-2 (loop-pattern syncopate 2))
 (define green-sleeves '(8 (1 0 0 0 1 0  1 0 0 1 1 0  1 0 0 0 1 0  1 0 0 1 1 0)))
 (define easy-3 '(4 (1 1 1 1 1 1)))
+(define honky-tonk-begin '(8 (1 1 0 1 1 0 1 0)))
 
 (define (trial pattern bpm)
   (play pattern bpm)
