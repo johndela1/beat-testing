@@ -1,9 +1,9 @@
-#!/usr/bin/csi -s
+#!/usr/local/bin/csi -s
 
 (use posix)
 (use srfi-1)
 (use srfi-18)
-(use sdl-mixer)
+;; (use sdl-mixer)
 
 (define HZ 500)
 (define TOLER 300)
@@ -182,6 +182,15 @@
 (define easy-3 '(4 (1 1 1 1 1 1)))
 (define honky-tonk-begin '(8 (1 1 0 1 1 0 1 0)))
 
+  (define (close-enough t1 t2)
+    (<= (abs (- t1 t2)) TOLER))
+  (define (find-match ts l)
+    (cond
+     ((null? l) '())
+     ((close-enough (car l) ts) (car l))
+     (else (find-match ts (cdr l)))))
+(print (find-match 10  '(20 10 500  1000)))
+(exit)
 ;; main entry point
 (if (= (length (argv)) 5)
     (let ((pattern-name (list-ref (argv) 3))
