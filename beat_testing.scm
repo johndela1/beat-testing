@@ -9,6 +9,7 @@
 (define TOLER 300)
 (define BEAT 4)
 (define SECS/MIN 60)
+(define SCREEN-WIDTH 70)
 ;; (open-audio)
 ;; (define noise (load-sample "boom.vorbis"))
 
@@ -19,6 +20,9 @@
       (lambda (exn)
 	(k #f))
       (lambda () (eval (with-input-from-string v read)))))))
+
+(define (sum l)
+  (apply + l))
 
 (define (secs->millis t)
   (* t 1000))
@@ -53,8 +57,6 @@
 	    (print 'note)
 	    (loop (cdr deltas)))))
     (loop deltas)))
-
-(define (analyze pattern input bpm)
   (define (deltas->tss deltas)
     (define (loop deltas acc-time)
       (if (null? deltas)
@@ -62,6 +64,8 @@
 	  (let ((ts (+ acc-time (car deltas))))
 	    (cons ts (loop (cdr deltas) ts)))))
     (loop deltas 0))
+
+(define (analyze pattern input bpm)
 
   (define (close-enough t1 t2)
     (<= (abs (- t1 t2)) TOLER))
@@ -155,9 +159,41 @@
   (play pattern bpm)
   (analyze pattern (record pattern bpm) bpm))
 
+(define (l-pad n)
+  (define (loop n)
+    (if (<= n 0)
+	""
+	(string-append " " (loop (- n 1)))))
+  (string-append (loop n) "x"))
+
+(define (visualize pattern results bpm)
+  (define (loop notes screen-divisor)
+    (if (null? notes)
+	'()
+	(let ((pos (ensure-int (/ (car notes) screen-divisor))))
+
+	  (display (l-pad pos))
+	  (loop (cdr notes) screen-divisor))))
+  (let* ((deltas (pattern->deltas pattern bpm))
+	 (screen-divisor (ensure-int (/ (sum deltas) SCREEN-WIDTH))))
+    (loop deltas screen-divisor)
+    (print)
+    (let* ((errors (map (lambda (pair) (cdr pair)) (cdr results)))
+	   (notes (map (lambda (pair) (+ (car pair) (cadr pair)))
+		       (zip deltas errors))))
+      ;XXX need to fix to not accumlat errors
+      (loop notes screen-divisor)
+      (print)
+      (print ts-deltas: (deltas->tss deltas))
+      (print ts-notes: (deltas->tss notes))
+      (print 'deltas: deltas)
+      (print 'errors: errors)
+      (print 'notes: notes))
+    (exit)
+
+    (print)))
+
 (define (report results)
-  (define (sum l)
-    (apply + l))
   (let ((passed (car results))
 	(errors (cdr results)))
     (print 'errors: errors)
@@ -187,7 +223,10 @@
     (let ((pattern-name (list-ref (argv) 3))
 	  (bpm (string->number (list-ref (argv) 4))))
       (if (defined? pattern-name)
-	  (let ((pattern (eval (with-input-from-string pattern-name read))))
-	    (report (trial pattern bpm)))
+	  (let* ((pattern (eval (with-input-from-string pattern-name read)))
+		(results (trial pattern bpm)))
+	    (report results)
+	    (if (car results)
+		(visualize pattern results bpm)))
 	  (print 'use-valid-pattern-name)))
     (print 'must-specify-pattern-and-bpm))
