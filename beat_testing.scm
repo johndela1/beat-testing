@@ -1,4 +1,4 @@
-#!/usr/local/bin/csi -s
+#!/usr/bin/env csi
 
 (use posix)
 (use srfi-1)
