@@ -1,4 +1,8 @@
 /* public domain, do as you wish */
+/*
+cc -std=c99 -O2 -I /usr/X11R6/include -o sct sct.c -L /usr/X11R6/lib -lm -lX11 -lXrandr
+*/
+
 #include <X11/Xlib.h>
 #include <X11/Xproto.h>
 #include <X11/Xatom.h>
@@ -8,6 +12,7 @@
 #include <math.h>
 
 
+float br = .9;
 /* cribbed from redshift, but truncated with 500K steps */
 static const struct { float r; float g; float b; } whitepoints[] = {
 	{ 1.00000000,  0.18172716,  0.00000000, }, /* 1000K */
@@ -46,10 +51,11 @@ main(int argc, char **argv)
 		temp = atoi(argv[1]);
 	if (temp < 1000 || temp > 10000)
 		temp = 6500;
-
+    if (argc > 2)
+		br = atof(argv[2]);
 	temp -= 1000;
 	double ratio = temp % 500 / 500.0;
-#define AVG(c) whitepoints[temp / 500].c * (1 - ratio) + whitepoints[temp / 500 + 1].c * ratio
+#define AVG(c) br * whitepoints[temp / 500].c * (1 - ratio) + whitepoints[temp / 500 + 1].c * ratio
 	double gammar = AVG(r);
 	double gammag = AVG(g);
 	double gammab = AVG(b);
