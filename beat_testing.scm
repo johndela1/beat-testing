@@ -54,6 +54,7 @@
 	    (loop (cdr deltas)))))
     (loop deltas)))
 
+;; looks like w are just accumulating and makeing a list of the  differeent values
 (define (analyze pattern input bpm)
   (define (deltas->tss deltas)
     (define (loop deltas acc-time)
