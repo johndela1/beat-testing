@@ -12,7 +12,7 @@ cc -std=c99 -O2 -I /usr/X11R6/include -o sct sct.c -L /usr/X11R6/lib -lm -lX11 -
 #include <math.h>
 
 
-float br = .9;
+float br = 1.0;
 /* cribbed from redshift, but truncated with 500K steps */
 static const struct { float r; float g; float b; } whitepoints[] = {
 	{ 1.00000000,  0.18172716,  0.00000000, }, /* 1000K */
